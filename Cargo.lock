@@ -1028,6 +1028,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
+source = "git+https://github.com/Fahien/rayca-core#263fa9e0b16aab9c512873cf9e19d2920aaaec71"
 dependencies = [
  "ash",
  "raw-window-metal",
@@ -1037,7 +1038,7 @@ dependencies = [
 
 [[package]]
 name = "rayca-demo"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rayca-core",
 ]
@@ -1190,6 +1191,7 @@ checksum = "04dc19736151f35336d325007ac991178d504a119863a2fcb3758cdb5e52c50d"
 [[package]]
 name = "slang"
 version = "0.1.0"
+source = "git+https://github.com/Fahien/slang-rs#5b9463cebc14ba60cf47f40ee1cab61c831c12fa"
 dependencies = [
  "slang-sys",
 ]
@@ -1197,6 +1199,7 @@ dependencies = [
 [[package]]
 name = "slang-sys"
 version = "0.1.0"
+source = "git+https://github.com/Fahien/slang-rs#5b9463cebc14ba60cf47f40ee1cab61c831c12fa"
 dependencies = [
  "bindgen",
 ]
