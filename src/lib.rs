@@ -62,7 +62,7 @@ fn main_loop(mut win: Win) {
 
     let entrypoint = CString::new("main").expect("Failed to create main entrypoint");
 
-    let pipeline = DefaultPipeline::new(
+    let pipeline = DefaultPipeline::new::<Vertex>(
         &mut dev,
         vert.get_stage(&entrypoint, vk::ShaderStageFlags::VERTEX),
         frag.get_stage(&entrypoint, vk::ShaderStageFlags::FRAGMENT),
@@ -73,9 +73,15 @@ fn main_loop(mut win: Win) {
 
     let mut buffer = Buffer::new(&vkr.ctx, &mut dev);
     let vertices = [
-        Vertex::new(-0.2, -0.2, 0.0),
-        Vertex::new(0.2, -0.2, 0.0),
-        Vertex::new(0.0, 0.2, 0.0),
+        Vertex::builder()
+            .position(Point3::new(-0.2, -0.2, 0.0))
+            .build(),
+        Vertex::builder()
+            .position(Point3::new(0.2, -0.2, 0.0))
+            .build(),
+        Vertex::builder()
+            .position(Point3::new(0.0, 0.2, 0.0))
+            .build(),
     ];
     buffer.upload(vertices.as_ptr(), buffer.size as usize);
 
