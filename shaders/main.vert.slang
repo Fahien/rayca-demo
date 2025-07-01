@@ -4,10 +4,12 @@
 
 import vertex;
 
+ConstantBuffer<float4x4> model;
+
 [shader("vertex")]
 Vertex main(float4 pos, float4 color) {
     Vertex out;
-    out.pos = pos;
+    out.pos = mul(model, pos);
     out.color = color;
     return out;
 }

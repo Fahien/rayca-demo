@@ -7,34 +7,10 @@ use rayca_core::*;
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
 
 impl RenderPipeline for PipelineMain {
-    fn render(&self, frame: &Frame, buffer: &Buffer) {
-        let graphics_bind_point = vk::PipelineBindPoint::GRAPHICS;
-        unsafe {
-            self.device.cmd_bind_pipeline(
-                frame.cache.command_buffer,
-                graphics_bind_point,
-                self.get_pipeline(),
-            )
-        };
-
-        let first_binding = 0;
-        let buffers = [buffer.buffer];
-        let offsets = [vk::DeviceSize::default()];
-
-        unsafe {
-            self.device.cmd_bind_vertex_buffers(
-                frame.cache.command_buffer,
-                first_binding,
-                &buffers,
-                &offsets,
-            );
-        }
-
-        let vertex_count = buffer.size as u32 / std::mem::size_of::<Vertex>() as u32;
-        unsafe {
-            self.device
-                .cmd_draw(frame.cache.command_buffer, vertex_count, 1, 0, 0);
-        }
+    fn render(&self, frame: &mut Frame, vertex_buffer: &Buffer) {
+        self.bind(&frame.cache);
+        self.bind_model(&mut frame.cache, &frame.ubo);
+        self.draw(&frame.cache, vertex_buffer);
     }
 }
 
@@ -119,11 +95,16 @@ fn main_loop(mut win: Win) {
     ];
     buffer.upload_arr(&vertices);
 
+    let mut model = Mat4::identity();
+
     loop {
         events.update(&mut win);
         if win.exit {
             break;
         }
+
+        let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.01);
+        model.rotate(&rot);
 
         let frame = match sfs.next_frame() {
             Ok(frame) => frame,
@@ -143,6 +124,7 @@ fn main_loop(mut win: Win) {
         };
 
         frame.begin(&pass);
+        frame.ubo.upload(&model);
         main_pipeline.render(frame, &buffer);
         line_pipeline.render(frame, &line_buffer);
         frame.end();
