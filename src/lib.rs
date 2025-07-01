@@ -64,15 +64,10 @@ fn main_loop(mut win: Win) {
     let surface = Surface::new(&win, &vkr.ctx);
     let mut dev = Dev::new(&vkr.ctx, Some(&surface));
 
-    let swapchain = Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
-
     let pass = Pass::new(&dev);
 
-    // Frames: collection of per-frame resources (device, swapchain, renderpass, command pool)
-    let mut frames = Vec::new();
-    for image in &swapchain.images {
-        frames.push(Frame::new(&mut dev, image, &pass));
-    }
+    let (width, height) = (win.size.width, win.size.height);
+    let mut sfs = SwapchainFrames::new(&vkr.ctx, &surface, &mut dev, width, height, &pass);
 
     let pipeline = PipelineMain::new::<Vertex>(
         #[cfg(target_os = "android")]
@@ -94,35 +89,50 @@ fn main_loop(mut win: Win) {
     ];
     buffer.upload(vertices.as_ptr(), buffer.size as usize);
 
-    let mut current_frame = 0;
-
     loop {
         events.update(&mut win);
         if win.exit {
             break;
         }
 
-        // Wait for this frame to be ready
-        let frame = &frames[current_frame];
-        frame.wait();
-
-        // Get next image
-        let (image_index, _) = unsafe {
-            swapchain.ext.acquire_next_image(
-                swapchain.swapchain,
-                u64::MAX,
-                frame.image_ready,
-                vk::Fence::null(),
-            )
-        }
-        .expect("Failed to acquire Vulkan next image");
+        let frame = match sfs.next_frame() {
+            Ok(frame) => frame,
+            // Recreate swapchain
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                drop(sfs);
+                sfs = SwapchainFrames::new(
+                    &vkr.ctx,
+                    &surface,
+                    &mut dev,
+                    win.size.width,
+                    win.size.height,
+                    &pass,
+                );
+                continue;
+            }
+            Err(result) => panic!("{:?}", result),
+        };
 
         frame.begin(&pass);
         pipeline.render(frame, &buffer);
         frame.end();
-        frame.present(&dev, &swapchain, image_index);
 
-        // Update current frame
-        current_frame = (current_frame + 1) % swapchain.images.len();
+        match sfs.present(&dev) {
+            // Recreate swapchain
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                drop(sfs);
+                sfs = SwapchainFrames::new(
+                    &vkr.ctx,
+                    &surface,
+                    &mut dev,
+                    win.size.width,
+                    win.size.height,
+                    &pass,
+                );
+                continue;
+            }
+            Err(result) => panic!("{:?}", result),
+            _ => (),
+        }
     }
 }
