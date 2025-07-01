@@ -1117,7 +1117,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#9866b59851b8424e486403077c7f75ce4cce2930"
+source = "git+https://github.com/Fahien/rayca-core#d2b0cd3b0f23c6bd7f4a48220bba91e9470f641e"
 dependencies = [
  "ash",
  "raw-window-metal",
@@ -1138,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "rayca-geometry"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-geometry#a9910f46913e013cefcfb0cba9ccf1b3125faa14"
+source = "git+https://github.com/Fahien/rayca-geometry#ed51821cf8859f26d7a358bbc8f6f2c7811cf1b0"
 dependencies = [
  "rayca-math",
  "rayca-util",
@@ -1157,7 +1157,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipe"
 version = "0.0.1"
-source = "git+https://github.com/Fahien/rayca-pipe#c57654c01b08cf479550e0196559aac91309b238"
+source = "git+https://github.com/Fahien/rayca-pipe#77f2e750ba56ec63475e14539a00c8ddf79342fd"
 dependencies = [
  "proc-macro2",
  "quote",

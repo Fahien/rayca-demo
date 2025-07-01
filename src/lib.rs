@@ -71,11 +71,38 @@ fn main_loop(mut win: Win) {
     let (width, height) = (win.size.width, win.size.height);
     let mut sfs = SwapchainFrames::new(&vkr.ctx, &surface, &mut dev, width, height, &pass);
 
-    let pipeline = PipelineMain::new::<Vertex>(
+    let main_pipeline = PipelineMain::new::<Vertex>(
         #[cfg(target_os = "android")]
         &win.android_app,
         &pass,
     );
+    let line_pipeline = PipelineMain::new::<LineVertex>(
+        #[cfg(target_os = "android")]
+        &win.android_app,
+        &pass,
+    );
+
+    let lines = vec![
+        // Notice how this line appears at the top of the picture as Vulkan Y axis is pointing downwards
+        Line::new(
+            LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
+            LineVertex::new(Point3::new(0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
+        ),
+        Line::new(
+            LineVertex::new(Point3::new(0.3, -0.3, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
+            LineVertex::new(Point3::new(0.3, 0.3, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
+        ),
+        Line::new(
+            LineVertex::new(Point3::new(0.3, 0.3, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
+            LineVertex::new(Point3::new(-0.3, 0.3, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
+        ),
+        Line::new(
+            LineVertex::new(Point3::new(-0.3, 0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
+            LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
+        ),
+    ];
+    let mut line_buffer = Buffer::new(&dev.allocator);
+    line_buffer.upload_arr(&lines);
 
     let mut buffer = Buffer::new(&dev.allocator);
     let vertices = [
@@ -116,7 +143,8 @@ fn main_loop(mut win: Win) {
         };
 
         frame.begin(&pass);
-        pipeline.render(frame, &buffer);
+        main_pipeline.render(frame, &buffer);
+        line_pipeline.render(frame, &line_buffer);
         frame.end();
 
         match sfs.present(&dev) {
@@ -137,4 +165,6 @@ fn main_loop(mut win: Win) {
             _ => (),
         }
     }
+
+    dev.wait();
 }
