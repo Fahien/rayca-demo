@@ -8,6 +8,34 @@ use std::rc::Rc;
 
 use rayca_core::*;
 
+rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
+
+impl RenderPipeline for PipelineMain {
+    fn render(&self, frame: &Frame, buffer: &Buffer) {
+        let graphics_bind_point = vk::PipelineBindPoint::GRAPHICS;
+        unsafe {
+            self.device.cmd_bind_pipeline(
+                frame.command_buffer,
+                graphics_bind_point,
+                self.get_pipeline(),
+            )
+        };
+
+        let first_binding = 0;
+        let buffers = [buffer.buffer];
+        let offsets = [vk::DeviceSize::default()];
+        unsafe {
+            self.device.cmd_bind_vertex_buffers(
+                frame.command_buffer,
+                first_binding,
+                &buffers,
+                &offsets,
+            );
+            self.device.cmd_draw(frame.command_buffer, 3, 1, 0, 0);
+        }
+    }
+}
+
 #[cfg(not(target_os = "android"))]
 pub fn main() {
     let win = Win::builder().build();
@@ -46,29 +74,10 @@ fn main_loop(mut win: Win) {
         frames.push(Frame::new(&mut dev, image, &pass));
     }
 
-    let shader_ext = if cfg!(target_os = "android") {
-        "spv"
-    } else {
-        "slang"
-    };
-
-    let vert_path = format!("shaders/main.vert.{}", shader_ext);
-    let frag_path = format!("shaders/main.frag.{}", shader_ext);
-
-    #[cfg(target_os = "android")]
-    let (vert, frag) = create_shaders(&win.android_app, &dev.device, &vert_path, &frag_path);
-    #[cfg(not(target_os = "android"))]
-    let (vert, frag) = create_shaders(&dev.device, &vert_path, &frag_path);
-
-    let entrypoint = CString::new("main").expect("Failed to create main entrypoint");
-
-    let pipeline = DefaultPipeline::new::<Vertex>(
-        &mut dev,
-        vert.get_stage(&entrypoint, vk::ShaderStageFlags::VERTEX),
-        frag.get_stage(&entrypoint, vk::ShaderStageFlags::FRAGMENT),
+    let pipeline = PipelineMain::new::<Vertex>(
+        #[cfg(target_os = "android")]
+        &win.android_app,
         &pass,
-        win.size.width,
-        win.size.height,
     );
 
     let mut buffer = Buffer::new(&vkr.ctx, &mut dev);
@@ -116,55 +125,4 @@ fn main_loop(mut win: Win) {
         // Update current frame
         current_frame = (current_frame + 1) % swapchain.images.len();
     }
-}
-
-#[cfg(target_os = "android")]
-fn create_shaders(
-    android_app: &AndroidApp,
-    device: &Rc<ash::Device>,
-    vert_path: &str,
-    frag_path: &str,
-) -> (ShaderModule, ShaderModule) {
-    use std::{ffi::CString, str::FromStr};
-
-    let c_vert_path =
-        CString::from_str(vert_path).expect("Failed to create CStr for vertex shader path");
-    let c_frag_path =
-        CString::from_str(frag_path).expect("Failed to create CStr for fragment shader path");
-    let mut vert_asset = android_app
-        .asset_manager()
-        .open(c_vert_path.as_c_str())
-        .expect("Failed to open vertex shader");
-    let mut frag_asset = android_app
-        .asset_manager()
-        .open(c_frag_path.as_c_str())
-        .expect("Failed to open vertex shader");
-
-    let vert_data = vert_asset
-        .buffer()
-        .expect("Failed to read vertex shader data");
-
-    let frag_data = frag_asset
-        .buffer()
-        .expect("Failed to read fragment shader data");
-
-    (
-        ShaderModule::from_data(device, vert_data, vk::ShaderStageFlags::VERTEX),
-        ShaderModule::from_data(device, frag_data, vk::ShaderStageFlags::FRAGMENT),
-    )
-}
-
-#[cfg(not(target_os = "android"))]
-fn create_shaders(
-    device: &Rc<ash::Device>,
-    vert_path: &str,
-    frag_path: &str,
-) -> (ShaderModule, ShaderModule) {
-    let vert_data = SlangProgram::get_entry_point_code(vert_path, "main").unwrap();
-    let frag_data = SlangProgram::get_entry_point_code(frag_path, "main").unwrap();
-
-    (
-        ShaderModule::from_data(device, &vert_data),
-        ShaderModule::from_data(device, &frag_data),
-    )
 }

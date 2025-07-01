@@ -1,4 +1,4 @@
-// Copyright © 2021-2024
+// Copyright © 2021-2025
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
