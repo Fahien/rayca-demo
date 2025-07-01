@@ -109,7 +109,7 @@ fn main_loop(mut win: Win) {
         .expect("Failed to acquire Vulkan next image");
 
         frame.begin(&pass);
-        pipeline.draw(frame, &buffer);
+        pipeline.render(frame, &buffer);
         frame.end();
         frame.present(&dev, &swapchain, image_index);
 
