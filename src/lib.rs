@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: MIT
 
 use rayca_core::*;
+use rayca_gltf::*;
 
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
 
 impl RenderPipeline for PipelineMain {
     fn render(&self, frame: &mut Frame, vertex_buffer: &Buffer) {
         self.bind(&frame.cache);
-        self.bind_model(&mut frame.cache, &frame.ubo);
+        self.bind_model(&mut frame.cache, &frame.model_buffer);
         self.draw(&frame.cache, vertex_buffer);
     }
 }
@@ -95,7 +96,7 @@ fn main_loop(mut win: Win) {
     ];
     buffer.upload_arr(&vertices);
 
-    let mut model = Mat4::identity();
+    let mut node = Node::new();
 
     loop {
         events.update(&mut win);
@@ -104,7 +105,7 @@ fn main_loop(mut win: Win) {
         }
 
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.01);
-        model.rotate(&rot);
+        node.trs.rotate(rot);
 
         let frame = match sfs.next_frame() {
             Ok(frame) => frame,
@@ -124,7 +125,7 @@ fn main_loop(mut win: Win) {
         };
 
         frame.begin(&pass);
-        frame.ubo.upload(&model);
+        frame.model_buffer.upload(&Mat4::from(&node.trs));
         main_pipeline.render(frame, &buffer);
         line_pipeline.render(frame, &line_buffer);
         frame.end();
