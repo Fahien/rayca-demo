@@ -101,10 +101,10 @@ fn main_loop(mut win: Win) {
             LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
         ),
     ];
-    let mut line_buffer = Buffer::new(&dev.allocator);
+    let mut line_buffer = Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
     line_buffer.upload_arr(&lines);
 
-    let mut buffer = Buffer::new(&dev.allocator);
+    let mut buffer = Buffer::new::<Vertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
     let vertices = [
         Vertex::builder()
             .position(Point3::new(-0.2, -0.2, 0.0))
@@ -116,7 +116,7 @@ fn main_loop(mut win: Win) {
             .position(Point3::new(0.0, 0.2, 0.0))
             .build(),
     ];
-    buffer.upload(vertices.as_ptr(), buffer.size as _);
+    buffer.upload_arr(&vertices);
 
     loop {
         events.update(&mut win);

@@ -1117,7 +1117,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#e297615f73d1603c672bcb3912b1cd6a7c0e2c29"
+source = "git+https://github.com/Fahien/rayca-core#cd4ca21a68b2d60c3062a8a6f61c01a6db67ad78"
 dependencies = [
  "ash",
  "raw-window-metal",
