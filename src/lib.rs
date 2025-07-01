@@ -11,7 +11,7 @@ impl RenderPipeline for PipelineMain {
         let graphics_bind_point = vk::PipelineBindPoint::GRAPHICS;
         unsafe {
             self.device.cmd_bind_pipeline(
-                frame.command_buffer,
+                frame.cache.command_buffer,
                 graphics_bind_point,
                 self.get_pipeline(),
             )
@@ -23,7 +23,7 @@ impl RenderPipeline for PipelineMain {
 
         unsafe {
             self.device.cmd_bind_vertex_buffers(
-                frame.command_buffer,
+                frame.cache.command_buffer,
                 first_binding,
                 &buffers,
                 &offsets,
@@ -33,7 +33,7 @@ impl RenderPipeline for PipelineMain {
         let vertex_count = buffer.size as u32 / std::mem::size_of::<Vertex>() as u32;
         unsafe {
             self.device
-                .cmd_draw(frame.command_buffer, vertex_count, 1, 0, 0);
+                .cmd_draw(frame.cache.command_buffer, vertex_count, 1, 0, 0);
         }
     }
 }
@@ -101,7 +101,8 @@ fn main_loop(mut win: Win) {
             LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
         ),
     ];
-    let mut line_buffer = Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
+    let mut line_buffer =
+        Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
     line_buffer.upload_arr(&lines);
 
     let mut buffer = Buffer::new::<Vertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
@@ -128,15 +129,14 @@ fn main_loop(mut win: Win) {
             Ok(frame) => frame,
             // Recreate swapchain
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
-                drop(sfs);
-                sfs = SwapchainFrames::new(
-                    &vkr.ctx,
-                    &surface,
-                    &mut dev,
-                    win.size.width,
-                    win.size.height,
-                    &pass,
-                );
+                drop(sfs.swapchain);
+
+                sfs.swapchain =
+                    Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+                for i in 0..sfs.swapchain.images.len() {
+                    let frame = &mut sfs.frames[i];
+                    frame.buffer = Framebuffer::new(&mut dev, &sfs.swapchain.images[i], &pass);
+                }
                 continue;
             }
             Err(result) => panic!("{:?}", result),
@@ -150,15 +150,14 @@ fn main_loop(mut win: Win) {
         match sfs.present(&dev) {
             // Recreate swapchain
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
-                drop(sfs);
-                sfs = SwapchainFrames::new(
-                    &vkr.ctx,
-                    &surface,
-                    &mut dev,
-                    win.size.width,
-                    win.size.height,
-                    &pass,
-                );
+                drop(sfs.swapchain);
+
+                sfs.swapchain =
+                    Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+                for i in 0..sfs.swapchain.images.len() {
+                    let frame = &mut sfs.frames[i];
+                    frame.buffer = Framebuffer::new(&mut dev, &sfs.swapchain.images[i], &pass);
+                }
                 continue;
             }
             Err(result) => panic!("{:?}", result),
