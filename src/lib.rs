@@ -2,10 +2,6 @@
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
-use std::ffi::CString;
-#[cfg(not(target_os = "android"))]
-use std::rc::Rc;
-
 use rayca_core::*;
 
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
@@ -24,6 +20,7 @@ impl RenderPipeline for PipelineMain {
         let first_binding = 0;
         let buffers = [buffer.buffer];
         let offsets = [vk::DeviceSize::default()];
+
         unsafe {
             self.device.cmd_bind_vertex_buffers(
                 frame.command_buffer,
@@ -31,7 +28,12 @@ impl RenderPipeline for PipelineMain {
                 &buffers,
                 &offsets,
             );
-            self.device.cmd_draw(frame.command_buffer, 3, 1, 0, 0);
+        }
+
+        let vertex_count = buffer.size as u32 / std::mem::size_of::<Vertex>() as u32;
+        unsafe {
+            self.device
+                .cmd_draw(frame.command_buffer, vertex_count, 1, 0, 0);
         }
     }
 }
@@ -75,7 +77,7 @@ fn main_loop(mut win: Win) {
         &pass,
     );
 
-    let mut buffer = Buffer::new(&vkr.ctx, &mut dev);
+    let mut buffer = Buffer::new(&dev.allocator);
     let vertices = [
         Vertex::builder()
             .position(Point3::new(-0.2, -0.2, 0.0))
@@ -87,7 +89,7 @@ fn main_loop(mut win: Win) {
             .position(Point3::new(0.0, 0.2, 0.0))
             .build(),
     ];
-    buffer.upload(vertices.as_ptr(), buffer.size as usize);
+    buffer.upload(vertices.as_ptr(), buffer.size as _);
 
     loop {
         events.update(&mut win);
