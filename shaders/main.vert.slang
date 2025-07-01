@@ -3,6 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 [shader("vertex")]
-float4 main(float3 pos) : SV_Position {
-    return float4(pos, 1.0);
+float4 main(float4 pos) : SV_Position {
+    return pos;
 }
