@@ -2,7 +2,12 @@
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
+import vertex;
+
 [shader("vertex")]
-float4 main(float4 pos) : SV_Position {
-    return pos;
+Vertex main(float4 pos, float4 color) {
+    Vertex out;
+    out.pos = pos;
+    out.color = color;
+    return out;
 }
