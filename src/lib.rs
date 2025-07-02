@@ -208,7 +208,7 @@ fn main_loop(mut win: Win) {
         let frame = frame.unwrap();
         frame.update(&model);
 
-        frame.begin(&pass);
+        frame.begin(&pass, win.size);
         frame.draw(&model, &pipelines);
         frame.end();
 
