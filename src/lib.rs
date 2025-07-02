@@ -3,15 +3,27 @@
 // SPDX-License-Identifier: MIT
 
 use rayca_core::*;
-use rayca_gltf::*;
 
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
 
 impl RenderPipeline for PipelineMain {
-    fn render(&self, frame: &mut Frame, vertex_buffer: &Buffer) {
+    fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
         self.bind(&frame.cache);
-        self.bind_model(&mut frame.cache, &frame.model_buffer);
-        self.draw(&frame.cache, vertex_buffer);
+
+        for node_handle in nodes.iter().cloned() {
+            let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
+            self.bind_model(
+                frame.cache.command_buffer,
+                &mut frame.cache.descriptors,
+                node_handle,
+                model_buffer,
+            );
+
+            let node = model.gltf.nodes.get(node_handle).unwrap();
+            let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+            let vertex_buffer = model.vertex_buffers.get(mesh.primitive.id.into()).unwrap();
+            self.draw(&frame.cache, vertex_buffer);
+        }
     }
 }
 
@@ -29,6 +41,8 @@ fn android_main(app: AndroidApp) {
 }
 
 fn main_loop(mut win: Win) {
+    let mut timer = Timer::new();
+
     let mut events = Events::new(&mut win);
 
     let vkr = Vkr::new(&win);
@@ -59,6 +73,12 @@ fn main_loop(mut win: Win) {
         &pass,
     );
 
+    let mut pipelines = Vec::<Box<dyn RenderPipeline>>::new();
+    pipelines.push(Box::new(main_pipeline));
+    pipelines.push(Box::new(line_pipeline));
+
+    let mut model = RenderModel::default();
+
     let lines = vec![
         // Notice how this line appears at the top of the picture as Vulkan Y axis is pointing downwards
         Line::new(
@@ -78,11 +98,33 @@ fn main_loop(mut win: Win) {
             LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
         ),
     ];
-    let mut line_buffer =
-        Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
-    line_buffer.upload_arr(&lines);
 
-    let mut buffer = Buffer::new::<Vertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
+    let mut lines_vertex_buffer =
+        Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
+    lines_vertex_buffer.upload_arr(&lines);
+
+    let lines_material = model
+        .gltf
+        .materials
+        .push(Material::builder().shader(1).build());
+
+    let lines_primitive = model
+        .gltf
+        .primitives
+        .push(Primitive::builder().material(lines_material).build());
+    let lines_mesh = model
+        .gltf
+        .meshes
+        .push(Mesh::builder().primitive(lines_primitive).build());
+    model.vertex_buffers.push(lines_vertex_buffer);
+    let lines = model
+        .gltf
+        .nodes
+        .push(Node::builder().mesh(lines_mesh).build());
+    model.gltf.scene.push(lines);
+
+    let mut rect_vertex_buffer =
+        Buffer::new::<Vertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
     let vertices = [
         Vertex::builder()
             .position(Point3::new(-0.2, -0.2, 0.0))
@@ -91,12 +133,36 @@ fn main_loop(mut win: Win) {
             .position(Point3::new(0.2, -0.2, 0.0))
             .build(),
         Vertex::builder()
-            .position(Point3::new(0.0, 0.2, 0.0))
+            .position(Point3::new(-0.2, 0.2, 0.0))
+            .build(),
+        Vertex::builder()
+            .position(Point3::new(0.2, -0.2, 0.0))
+            .build(),
+        Vertex::builder()
+            .position(Point3::new(0.2, 0.2, 0.0))
+            .build(),
+        Vertex::builder()
+            .position(Point3::new(-0.2, 0.2, 0.0))
             .build(),
     ];
-    buffer.upload_arr(&vertices);
+    rect_vertex_buffer.upload_arr(&vertices);
 
-    let mut node = Node::new();
+    let rect_material = model.gltf.materials.push(Material::builder().build());
+    let rect_primitive = model
+        .gltf
+        .primitives
+        .push(Primitive::builder().material(rect_material).build());
+    let rect_mesh = model
+        .gltf
+        .meshes
+        .push(Mesh::builder().primitive(rect_primitive).build());
+    model.vertex_buffers.push(rect_vertex_buffer);
+
+    let rect = model
+        .gltf
+        .nodes
+        .push(Node::builder().mesh(rect_mesh).build());
+    model.gltf.scene.push(rect);
 
     loop {
         events.update(&mut win);
@@ -104,8 +170,14 @@ fn main_loop(mut win: Win) {
             break;
         }
 
-        let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.01);
-        node.trs.rotate(rot);
+        let delta = timer.get_delta().as_secs_f32();
+
+        let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), delta / 2.0);
+        model.gltf.nodes.get_mut(rect).unwrap().trs.rotate(rot);
+
+        let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
+        model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
+
 
         let frame = match sfs.next_frame() {
             Ok(frame) => frame,
@@ -124,10 +196,10 @@ fn main_loop(mut win: Win) {
             Err(result) => panic!("{:?}", result),
         };
 
+        frame.update(&model);
+
         frame.begin(&pass);
-        frame.model_buffer.upload(&Mat4::from(&node.trs));
-        main_pipeline.render(frame, &buffer);
-        line_pipeline.render(frame, &line_buffer);
+        frame.draw(&model, &pipelines);
         frame.end();
 
         match sfs.present(&dev) {
