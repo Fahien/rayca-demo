@@ -21,8 +21,8 @@ impl RenderPipeline for PipelineMain {
 
             let node = model.gltf.nodes.get(node_handle).unwrap();
             let mesh = model.gltf.meshes.get(node.mesh).unwrap();
-            let vertex_buffer = model.vertex_buffers.get(mesh.primitive.id.into()).unwrap();
-            self.draw(&frame.cache, vertex_buffer);
+            let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
+            self.draw(&frame.cache, primitive);
         }
     }
 }
@@ -79,84 +79,69 @@ fn main_loop(mut win: Win) {
 
     let mut model = RenderModel::default();
 
-    let lines = vec![
-        // Notice how this line appears at the top of the picture as Vulkan Y axis is pointing downwards
-        Line::new(
+    let line_primitives = {
+        // Notice how the first line appears at the top of the picture as Vulkan Y axis is pointing downwards
+        let lines_vertices = vec![
             LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
             LineVertex::new(Point3::new(0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
-        ),
-        Line::new(
-            LineVertex::new(Point3::new(0.3, -0.3, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
             LineVertex::new(Point3::new(0.3, 0.3, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
-        ),
-        Line::new(
-            LineVertex::new(Point3::new(0.3, 0.3, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
             LineVertex::new(Point3::new(-0.3, 0.3, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
-        ),
-        Line::new(
-            LineVertex::new(Point3::new(-0.3, 0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
             LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
-        ),
-    ];
-
-    let mut lines_vertex_buffer =
-        Buffer::new::<LineVertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
-    lines_vertex_buffer.upload_arr(&lines);
+        ];
+        RenderPrimitive::new(&dev.allocator, &lines_vertices)
+    };
+    model.primitives.push(line_primitives);
 
     let lines_material = model
         .gltf
         .materials
         .push(Material::builder().shader(1).build());
 
-    let lines_primitive = model
+    let lines_primitive_handle = model
         .gltf
         .primitives
         .push(Primitive::builder().material(lines_material).build());
     let lines_mesh = model
         .gltf
         .meshes
-        .push(Mesh::builder().primitive(lines_primitive).build());
-    model.vertex_buffers.push(lines_vertex_buffer);
+        .push(Mesh::builder().primitive(lines_primitive_handle).build());
     let lines = model
         .gltf
         .nodes
         .push(Node::builder().mesh(lines_mesh).build());
     model.gltf.scene.push(lines);
 
-    let mut rect_vertex_buffer =
-        Buffer::new::<Vertex>(&dev.allocator, vk::BufferUsageFlags::VERTEX_BUFFER);
-    let vertices = [
-        Vertex::builder()
-            .position(Point3::new(-0.2, -0.2, 0.0))
-            .build(),
-        Vertex::builder()
-            .position(Point3::new(0.2, -0.2, 0.0))
-            .build(),
-        Vertex::builder()
-            .position(Point3::new(-0.2, 0.2, 0.0))
-            .build(),
-        Vertex::builder()
-            .position(Point3::new(0.2, -0.2, 0.0))
-            .build(),
-        Vertex::builder()
-            .position(Point3::new(0.2, 0.2, 0.0))
-            .build(),
-        Vertex::builder()
-            .position(Point3::new(-0.2, 0.2, 0.0))
-            .build(),
-    ];
-    rect_vertex_buffer.upload_arr(&vertices);
+    let rect_primitive = {
+        let vertices = vec![
+            Vertex::builder()
+                .position(Point3::new(-0.2, -0.2, 0.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(0.2, -0.2, 0.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(-0.2, 0.2, 0.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(0.2, 0.2, 0.0))
+                .build(),
+        ];
+        let mut primitive = RenderPrimitive::new(&dev.allocator, &vertices);
+        let indices = vec![0, 1, 2, 1, 3, 2];
+        primitive.set_indices(&indices);
+        primitive
+    };
 
     let rect_material = model.gltf.materials.push(Material::builder().build());
-    let rect_primitive = model
+    let rect_primitive_handle = model
         .gltf
         .primitives
         .push(Primitive::builder().material(rect_material).build());
     let rect_mesh = model
         .gltf
         .meshes
-        .push(Mesh::builder().primitive(rect_primitive).build());
-    model.vertex_buffers.push(rect_vertex_buffer);
+        .push(Mesh::builder().primitive(rect_primitive_handle).build());
+    model.primitives.push(rect_primitive);
 
     let rect = model
         .gltf
@@ -177,7 +162,6 @@ fn main_loop(mut win: Win) {
 
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
         model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
-
 
         let frame = match sfs.next_frame() {
             Ok(frame) => frame,
