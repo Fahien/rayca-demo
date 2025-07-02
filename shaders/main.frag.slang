@@ -4,7 +4,13 @@
 
 import vertex;
 
+[vk::binding(0, 1)]
+Texture2D texture;
+[vk::binding(0, 1)]
+SamplerState sampler;
+
 [shader("fragment")]
-float4 main(in Vertex vertex) : SV_Target {
-    return vertex.color;
+float4 main(in Vertex vertex) : SV_Target
+{
+    return vertex.color * texture.Sample(sampler, vertex.uv);
 }

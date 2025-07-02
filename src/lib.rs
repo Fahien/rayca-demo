@@ -5,6 +5,35 @@
 use rayca_core::*;
 
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
+rayca_pipe::pipewriter!(Line, "shaders/line.vert.slang", "shaders/line.frag.slang");
+
+impl RenderPipeline for PipelineLine {
+    fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
+        self.bind(&frame.cache);
+
+        for node_handle in nodes.iter().cloned() {
+            let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
+
+            let descriptor_key = DescriptorKey {
+                pipeline_layout: self.layout,
+                node: node_handle,
+                material: Handle::NONE,
+            };
+
+            self.bind_model(
+                frame.cache.command_buffer,
+                &mut frame.cache.descriptors,
+                descriptor_key,
+                model_buffer,
+            );
+
+            let node = model.gltf.nodes.get(node_handle).unwrap();
+            let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+            let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
+            self.draw(&frame.cache, primitive);
+        }
+    }
+}
 
 impl RenderPipeline for PipelineMain {
     fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
@@ -12,15 +41,34 @@ impl RenderPipeline for PipelineMain {
 
         for node_handle in nodes.iter().cloned() {
             let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
+
+            let descriptor_key = DescriptorKey {
+                pipeline_layout: self.layout,
+                node: node_handle,
+                material: Handle::NONE,
+            };
             self.bind_model(
                 frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                node_handle,
+                descriptor_key,
                 model_buffer,
             );
 
             let node = model.gltf.nodes.get(node_handle).unwrap();
             let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+            let primitive = model.gltf.primitives.get(mesh.primitive).unwrap();
+
+            let descriptor_key = DescriptorKey {
+                pipeline_layout: self.layout,
+                node: Handle::NONE,
+                material: primitive.material,
+            };
+            self.bind_texture(
+                frame.cache.command_buffer,
+                &mut frame.cache.descriptors,
+                descriptor_key,
+                &model.textures[0],
+            );
             let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
             self.draw(&frame.cache, primitive);
         }
@@ -67,7 +115,7 @@ fn main_loop(mut win: Win) {
         &win.android_app,
         &pass,
     );
-    let line_pipeline = PipelineMain::new::<LineVertex>(
+    let line_pipeline = PipelineLine::new::<LineVertex>(
         #[cfg(target_os = "android")]
         &win.android_app,
         &pass,
@@ -78,6 +126,22 @@ fn main_loop(mut win: Win) {
     pipelines.push(Box::new(line_pipeline));
 
     let mut model = RenderModel::default();
+
+    let asset = Asset::load(
+        #[cfg(target_os = "android")]
+        &win.android_app,
+        "images/test.png",
+    );
+    let mut png = Png::new(asset);
+    let image = RenderImage::load(&dev, &mut png);
+    let view = ImageView::new(&dev.device.device, &image);
+    let sampler = RenderSampler::new(&dev.device.device);
+    let texture = RenderTexture::new(&view, &sampler);
+
+    model.images.push(image);
+    model.views.push(view);
+    model.samplers.push(sampler);
+    let texture_handle = model.textures.push(texture);
 
     let line_primitives = {
         // Notice how the first line appears at the top of the picture as Vulkan Y axis is pointing downwards
@@ -115,15 +179,19 @@ fn main_loop(mut win: Win) {
         let vertices = vec![
             Vertex::builder()
                 .position(Point3::new(-0.2, -0.2, 0.0))
+                .uv(Vec2::new(0.0, 0.0))
                 .build(),
             Vertex::builder()
                 .position(Point3::new(0.2, -0.2, 0.0))
+                .uv(Vec2::new(1.0, 0.0))
                 .build(),
             Vertex::builder()
                 .position(Point3::new(-0.2, 0.2, 0.0))
+                .uv(Vec2::new(0.0, 1.0))
                 .build(),
             Vertex::builder()
                 .position(Point3::new(0.2, 0.2, 0.0))
+                .uv(Vec2::new(1.0, 1.0))
                 .build(),
         ];
         let mut primitive = RenderPrimitive::new(&dev.allocator, &vertices);
@@ -132,7 +200,11 @@ fn main_loop(mut win: Win) {
         primitive
     };
 
-    let rect_material = model.gltf.materials.push(Material::builder().build());
+    let rect_material = model.gltf.materials.push(
+        Material::builder()
+            .texture(texture_handle.id.into())
+            .build(),
+    );
     let rect_primitive_handle = model
         .gltf
         .primitives
@@ -148,14 +220,6 @@ fn main_loop(mut win: Win) {
         .nodes
         .push(Node::builder().mesh(rect_mesh).build());
     model.gltf.scene.push(rect);
-
-    let asset = Asset::load(
-        #[cfg(target_os = "android")]
-        &win.android_app,
-        "images/test.png",
-    );
-    let mut png = Png::new(asset);
-    let _image = Image::load(&dev, &mut png);
 
     loop {
         events.update(&mut win);
@@ -183,8 +247,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer =
-                    Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
             }
             win.resized = false;
         }
@@ -206,8 +269,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer =
-                    Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
             }
 
             continue;
@@ -232,8 +294,7 @@ fn main_loop(mut win: Win) {
                     // Semaphores must be recreated to avoid validation errors
                     frame.cache.image_ready = Semaphore::new(&dev.device.device);
                     frame.cache.image_drawn = Semaphore::new(&dev.device.device);
-                    frame.buffer =
-                        Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                    frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
                 }
                 continue;
             }
