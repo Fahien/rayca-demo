@@ -149,6 +149,14 @@ fn main_loop(mut win: Win) {
         .push(Node::builder().mesh(rect_mesh).build());
     model.gltf.scene.push(rect);
 
+    let asset = Asset::load(
+        #[cfg(target_os = "android")]
+        &win.android_app,
+        "images/test.png",
+    );
+    let mut png = Png::new(asset);
+    let _image = Image::load(&dev, &mut png);
+
     loop {
         events.update(&mut win);
         if win.exit {
