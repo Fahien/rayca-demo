@@ -163,23 +163,49 @@ fn main_loop(mut win: Win) {
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
         model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
 
-        let frame = match sfs.next_frame() {
-            Ok(frame) => frame,
-            // Recreate swapchain
-            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
-                drop(sfs.swapchain);
-
-                sfs.swapchain =
-                    Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
-                for i in 0..sfs.swapchain.images.len() {
-                    let frame = &mut sfs.frames[i];
-                    frame.buffer = Framebuffer::new(&mut dev, &sfs.swapchain.images[i], &pass);
-                }
-                continue;
+        if win.resized {
+            dev.wait();
+            drop(sfs.swapchain);
+            // Current must be reset to avoid LAYOUT_UNDEFINED validation errors
+            sfs.current = 0;
+            sfs.swapchain =
+                Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+            for i in 0..sfs.swapchain.images.len() {
+                let frame = &mut sfs.frames[i];
+                // Only this semaphore must be recreated to avoid validation errors
+                // The image drawn one is still in use at the moment
+                frame.cache.image_ready = Semaphore::new(&dev.device.device);
+                frame.buffer =
+                    Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
             }
-            Err(result) => panic!("{:?}", result),
+            win.resized = false;
+        }
+
+        let frame = sfs.next_frame();
+
+        if frame.is_err() {
+            let result = frame.err().unwrap();
+            if result != vk::Result::ERROR_OUT_OF_DATE_KHR {
+                panic!("{:?}", result);
+            }
+
+            dev.wait();
+            drop(sfs.swapchain);
+            sfs.swapchain =
+                Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+            for i in 0..sfs.swapchain.images.len() {
+                let frame = &mut sfs.frames[i];
+                // Only this semaphore must be recreated to avoid validation errors
+                // The image drawn one is still in use at the moment
+                frame.cache.image_ready = Semaphore::new(&dev.device.device);
+                frame.buffer =
+                    Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+            }
+
+            continue;
         };
 
+        let frame = frame.unwrap();
         frame.update(&model);
 
         frame.begin(&pass);
@@ -189,13 +215,17 @@ fn main_loop(mut win: Win) {
         match sfs.present(&dev) {
             // Recreate swapchain
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                dev.wait();
                 drop(sfs.swapchain);
-
                 sfs.swapchain =
                     Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
                 for i in 0..sfs.swapchain.images.len() {
                     let frame = &mut sfs.frames[i];
-                    frame.buffer = Framebuffer::new(&mut dev, &sfs.swapchain.images[i], &pass);
+                    // Semaphores must be recreated to avoid validation errors
+                    frame.cache.image_ready = Semaphore::new(&dev.device.device);
+                    frame.cache.image_drawn = Semaphore::new(&dev.device.device);
+                    frame.buffer =
+                        Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
                 }
                 continue;
             }
@@ -204,5 +234,6 @@ fn main_loop(mut win: Win) {
         }
     }
 
+    // Make sure device is idle before releasing Vulkan resources
     dev.wait();
 }
