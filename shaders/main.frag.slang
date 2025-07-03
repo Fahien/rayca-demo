@@ -4,9 +4,9 @@
 
 import vertex;
 
-[vk::binding(0, 1)]
+[vk::binding(0, 2)]
 Texture2D texture;
-[vk::binding(0, 1)]
+[vk::binding(0, 2)]
 SamplerState sampler;
 
 [shader("fragment")]

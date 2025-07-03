@@ -8,88 +8,118 @@ rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slan
 rayca_pipe::pipewriter!(Line, "shaders/line.vert.slang", "shaders/line.frag.slang");
 
 impl RenderPipeline for PipelineLine {
-    fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
+    fn render(
+        &self,
+        frame: &mut Frame,
+        model: &RenderModel,
+        camera_nodes: &[Handle<Node>],
+        nodes: &[Handle<Node>],
+    ) {
         self.bind(&frame.cache);
-
-        for node_handle in nodes.iter().cloned() {
-            let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
-
-            let model_key = DescriptorKey {
-                pipeline_layout: self.get_layout(),
-                node: node_handle,
-                material: Handle::NONE,
-            };
-            self.bind_model(
-                frame.cache.command_buffer,
+        for camera_node_handle in camera_nodes.iter().copied() {
+            let camera_node = model.gltf.nodes.get(camera_node_handle).unwrap();
+            let camera_key = DescriptorKey::builder()
+                .layout(self.get_layout())
+                .node(camera_node_handle)
+                .camera(camera_node.camera)
+                .build();
+            let view = frame.cache.view_buffers.get(&camera_node_handle).unwrap();
+            let proj = frame.cache.proj_buffers.get(&camera_node.camera).unwrap();
+            self.bind_view_and_proj(
+                &frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                model_key,
-                model_buffer,
+                camera_key,
+                view,
+                proj,
             );
 
-            let node = model.gltf.nodes.get(node_handle).unwrap();
-            let mesh = model.gltf.meshes.get(node.mesh).unwrap();
-            let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
-            self.draw(&frame.cache, primitive);
+            for node_handle in nodes.iter().cloned() {
+                let model_buffer = frame.cache.model_buffers.get(&node_handle).unwrap();
+                let model_key = DescriptorKey::builder()
+                    .layout(self.get_layout())
+                    .node(node_handle)
+                    .build();
+                self.bind_model(
+                    &frame.cache.command_buffer,
+                    &mut frame.cache.descriptors,
+                    model_key,
+                    model_buffer,
+                );
+
+                let node = model.gltf.nodes.get(node_handle).unwrap();
+                let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+                let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
+                self.draw(&frame.cache, primitive);
+            }
         }
     }
 }
 
 impl RenderPipeline for PipelineMain {
-    fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
+    fn render(
+        &self,
+        frame: &mut Frame,
+        model: &RenderModel,
+        camera_nodes: &[Handle<Node>],
+        nodes: &[Handle<Node>],
+    ) {
         self.bind(&frame.cache);
 
-        // Supposedly, the material is the same for all nodes
-        let node = model.gltf.nodes.get(nodes[0]).unwrap();
-        let mesh = model.gltf.meshes.get(node.mesh).unwrap();
-        let primitive = model.gltf.primitives.get(mesh.primitive).unwrap();
-        let material = model.gltf.materials.get(primitive.material).unwrap();
-        let texture = model.textures.get(material.texture.id.into()).unwrap();
-        // The problem here is that this is caching descriptor set for index 1
-        // with the s key as descriptor set index 1.
-        // Need to fix
-        let image_key = DescriptorKey {
-            pipeline_layout: self.get_layout(),
-            node: Handle::NONE,
-            material: primitive.material,
-        };
-        self.bind_texture(
-            frame.cache.command_buffer,
-            &mut frame.cache.descriptors,
-            image_key,
-            texture,
-        );
-
-        for node_handle in nodes.iter().cloned() {
-            let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
-            let model_key = DescriptorKey {
-                pipeline_layout: self.get_layout(),
-                node: node_handle,
-                material: Handle::NONE,
-            };
-            self.bind_model(
-                frame.cache.command_buffer,
+        for camera_node_handle in camera_nodes.iter().copied() {
+            let camera_node = model.gltf.nodes.get(camera_node_handle).unwrap();
+            let camera_key = DescriptorKey::builder()
+                .layout(self.get_layout())
+                .node(camera_node_handle)
+                .camera(camera_node.camera)
+                .build();
+            let view = frame.cache.view_buffers.get(&camera_node_handle).unwrap();
+            let proj = frame.cache.proj_buffers.get(&camera_node.camera).unwrap();
+            self.bind_view_and_proj(
+                &frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                model_key,
-                model_buffer,
+                camera_key,
+                view,
+                proj,
             );
 
-            let node = model.gltf.nodes.get(node_handle).unwrap();
+            // Supposedly, the material is the same for all nodes
+            let node = model.gltf.nodes.get(nodes[0]).unwrap();
             let mesh = model.gltf.meshes.get(node.mesh).unwrap();
             let primitive = model.gltf.primitives.get(mesh.primitive).unwrap();
-
-            let descriptor_key = DescriptorKey {
-                pipeline_layout: self.layout,
-                node: Handle::NONE,
-                material: primitive.material,
-            };
+            let material = model.gltf.materials.get(primitive.material).unwrap();
+            let texture = model.textures.get(material.texture.id.into()).unwrap();
+            // The problem here is that this is caching descriptor set for index 1
+            // with the s key as descriptor set index 1.
+            // Need to fix
+            let image_key = DescriptorKey::builder()
+                .layout(self.get_layout())
+                .material(primitive.material)
+                .build();
             self.bind_texture(
-                frame.cache.command_buffer,
+                &frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                descriptor_key,
-                &model.textures[0],
+                image_key,
+                texture,
             );
-            let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
-            self.draw(&frame.cache, primitive);
+
+            for node_handle in nodes.iter().cloned() {
+                let model_buffer = frame.cache.model_buffers.get(&node_handle).unwrap();
+                let model_key = DescriptorKey::builder()
+                    .layout(self.get_layout())
+                    .node(node_handle)
+                    .build();
+                self.bind_model(
+                    &frame.cache.command_buffer,
+                    &mut frame.cache.descriptors,
+                    model_key,
+                    model_buffer,
+                );
+
+                let node = model.gltf.nodes.get(node_handle).unwrap();
+                let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+                let primitive = model.primitives.get(mesh.primitive.id.into()).unwrap();
+                self.draw(&frame.cache, primitive);
+            }
         }
     }
 }
@@ -146,6 +176,17 @@ fn main_loop(mut win: Win) {
 
     let mut model = RenderModel::default();
 
+    let camera = model
+        .gltf
+        .cameras
+        .push(Camera::orthographic(2.0, 2.0, 0.1, 1.0));
+    let camera_node = Node::builder()
+        .camera(camera)
+        .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 0.0)).build())
+        .build();
+    let camera_node_handle = model.gltf.nodes.push(camera_node);
+    model.gltf.scene.push(camera_node_handle);
+
     let asset = Asset::load(
         #[cfg(target_os = "android")]
         &win.android_app,
@@ -165,11 +206,11 @@ fn main_loop(mut win: Win) {
     let line_primitives = {
         // Notice how the first line appears at the top of the picture as Vulkan Y axis is pointing downwards
         let lines_vertices = vec![
-            LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
-            LineVertex::new(Point3::new(0.3, -0.3, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
-            LineVertex::new(Point3::new(0.3, 0.3, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
-            LineVertex::new(Point3::new(-0.3, 0.3, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
-            LineVertex::new(Point3::new(-0.3, -0.3, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
+            LineVertex::new(Point3::new(-0.5, -0.5, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
+            LineVertex::new(Point3::new(0.5, -0.5, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
+            LineVertex::new(Point3::new(0.5, 0.5, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
+            LineVertex::new(Point3::new(-0.5, 0.5, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
+            LineVertex::new(Point3::new(-0.5, -0.5, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
         ];
         RenderPrimitive::new(&dev.allocator, &lines_vertices)
     };
@@ -188,10 +229,12 @@ fn main_loop(mut win: Win) {
         .gltf
         .meshes
         .push(Mesh::builder().primitive(lines_primitive_handle).build());
-    let lines = model
-        .gltf
-        .nodes
-        .push(Node::builder().mesh(lines_mesh).build());
+    let lines = model.gltf.nodes.push(
+        Node::builder()
+            .trs(Trs::builder().translation(Vec3::new(0.5, 0.5, 0.3)).build())
+            .mesh(lines_mesh)
+            .build(),
+    );
     model.gltf.scene.push(lines);
 
     let rect_primitive = {
@@ -234,10 +277,12 @@ fn main_loop(mut win: Win) {
         .push(Mesh::builder().primitive(rect_primitive_handle).build());
     model.primitives.push(rect_primitive);
 
-    let rect = model
-        .gltf
-        .nodes
-        .push(Node::builder().mesh(rect_mesh).build());
+    let rect = model.gltf.nodes.push(
+        Node::builder()
+            .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 0.2)).build())
+            .mesh(rect_mesh)
+            .build(),
+    );
     model.gltf.scene.push(rect);
 
     loop {
@@ -266,7 +311,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
             }
             win.resized = false;
         }
@@ -288,7 +333,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
             }
 
             continue;
@@ -313,7 +358,7 @@ fn main_loop(mut win: Win) {
                     // Semaphores must be recreated to avoid validation errors
                     frame.cache.image_ready = Semaphore::new(&dev.device.device);
                     frame.cache.image_drawn = Semaphore::new(&dev.device.device);
-                    frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
+                    frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
                 }
                 continue;
             }
