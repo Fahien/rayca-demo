@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use rayca_core::*;
+use rayca_gui::*;
 
 rayca_pipe::pipewriter!(Main, "shaders/main.vert.slang", "shaders/main.frag.slang");
 rayca_pipe::pipewriter!(Line, "shaders/line.vert.slang", "shaders/line.frag.slang");
@@ -16,6 +17,8 @@ impl RenderPipeline for PipelineLine {
         nodes: &[Handle<Node>],
     ) {
         self.bind(&frame.cache);
+        frame.set_viewport_and_scissor(1.0);
+
         for camera_node_handle in camera_nodes.iter().copied() {
             let camera_node = model.gltf.nodes.get(camera_node_handle).unwrap();
             let camera_key = DescriptorKey::builder()
@@ -64,6 +67,7 @@ impl RenderPipeline for PipelineMain {
         nodes: &[Handle<Node>],
     ) {
         self.bind(&frame.cache);
+        frame.set_viewport_and_scissor(1.0);
 
         for camera_node_handle in camera_nodes.iter().copied() {
             let camera_node = model.gltf.nodes.get(camera_node_handle).unwrap();
@@ -174,12 +178,22 @@ fn main_loop(mut win: Win) {
     pipelines.push(Box::new(main_pipeline));
     pipelines.push(Box::new(line_pipeline));
 
+    let mut gui = Gui::new(
+        #[cfg(target_os = "android")]
+        &win.android_app,
+        sfs.frames.len(),
+        &dev.allocator,
+        &pass,
+    );
+
     let mut model = RenderModel::default();
 
-    let camera = model
-        .gltf
-        .cameras
-        .push(Camera::orthographic(2.0, 2.0, 0.1, 1.0));
+    let camera = model.gltf.cameras.push(Camera::orthographic(
+        width as f32 / 480.0,
+        height as f32 / 480.0,
+        0.1,
+        1.0,
+    ));
     let camera_node = Node::builder()
         .camera(camera)
         .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 0.0)).build())
@@ -299,13 +313,16 @@ fn main_loop(mut win: Win) {
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
         model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
 
+        let (width, height) = (win.size.width, win.size.height);
+        let camera = model.gltf.cameras.get_mut(camera).unwrap();
+        *camera = Camera::orthographic(width as f32 / 480.0, height as f32 / 480.0, 0.1, 1.0);
+
         if win.resized {
             dev.wait();
             drop(sfs.swapchain);
             // Current must be reset to avoid LAYOUT_UNDEFINED validation errors
             sfs.current = 0;
-            sfs.swapchain =
-                Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+            sfs.swapchain = Swapchain::new(&vkr.ctx, &surface, &dev, width, height);
             for i in 0..sfs.swapchain.images.len() {
                 let frame = &mut sfs.frames[i];
                 // Only this semaphore must be recreated to avoid validation errors
@@ -326,8 +343,7 @@ fn main_loop(mut win: Win) {
 
             dev.wait();
             drop(sfs.swapchain);
-            sfs.swapchain =
-                Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
+            sfs.swapchain = Swapchain::new(&vkr.ctx, &surface, &dev, width, height);
             for i in 0..sfs.swapchain.images.len() {
                 let frame = &mut sfs.frames[i];
                 // Only this semaphore must be recreated to avoid validation errors
@@ -340,10 +356,11 @@ fn main_loop(mut win: Win) {
         };
 
         let frame = frame.unwrap();
-        frame.update(&model);
-
-        frame.begin(&pass, win.size);
+        frame.begin(&model);
+        gui.update(frame);
+        frame.begin_render(&pass);
         frame.draw(&model, &pipelines);
+        gui.draw(frame);
         frame.end();
 
         match sfs.present(&dev) {
