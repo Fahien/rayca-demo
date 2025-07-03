@@ -14,16 +14,15 @@ impl RenderPipeline for PipelineLine {
         for node_handle in nodes.iter().cloned() {
             let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
 
-            let descriptor_key = DescriptorKey {
-                pipeline_layout: self.layout,
+            let model_key = DescriptorKey {
+                pipeline_layout: self.get_layout(),
                 node: node_handle,
                 material: Handle::NONE,
             };
-
             self.bind_model(
                 frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                descriptor_key,
+                model_key,
                 model_buffer,
             );
 
@@ -39,18 +38,38 @@ impl RenderPipeline for PipelineMain {
     fn render(&self, frame: &mut Frame, model: &RenderModel, nodes: &[Handle<Node>]) {
         self.bind(&frame.cache);
 
+        // Supposedly, the material is the same for all nodes
+        let node = model.gltf.nodes.get(nodes[0]).unwrap();
+        let mesh = model.gltf.meshes.get(node.mesh).unwrap();
+        let primitive = model.gltf.primitives.get(mesh.primitive).unwrap();
+        let material = model.gltf.materials.get(primitive.material).unwrap();
+        let texture = model.textures.get(material.texture.id.into()).unwrap();
+        // The problem here is that this is caching descriptor set for index 1
+        // with the s key as descriptor set index 1.
+        // Need to fix
+        let image_key = DescriptorKey {
+            pipeline_layout: self.get_layout(),
+            node: Handle::NONE,
+            material: primitive.material,
+        };
+        self.bind_texture(
+            frame.cache.command_buffer,
+            &mut frame.cache.descriptors,
+            image_key,
+            texture,
+        );
+
         for node_handle in nodes.iter().cloned() {
             let model_buffer = frame.cache.uniforms.get(&node_handle).unwrap();
-
-            let descriptor_key = DescriptorKey {
-                pipeline_layout: self.layout,
+            let model_key = DescriptorKey {
+                pipeline_layout: self.get_layout(),
                 node: node_handle,
                 material: Handle::NONE,
             };
             self.bind_model(
                 frame.cache.command_buffer,
                 &mut frame.cache.descriptors,
-                descriptor_key,
+                model_key,
                 model_buffer,
             );
 
@@ -247,7 +266,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
             }
             win.resized = false;
         }
@@ -269,7 +288,7 @@ fn main_loop(mut win: Win) {
                 // Only this semaphore must be recreated to avoid validation errors
                 // The image drawn one is still in use at the moment
                 frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
+                frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
             }
 
             continue;
@@ -294,7 +313,7 @@ fn main_loop(mut win: Win) {
                     // Semaphores must be recreated to avoid validation errors
                     frame.cache.image_ready = Semaphore::new(&dev.device.device);
                     frame.cache.image_drawn = Semaphore::new(&dev.device.device);
-                    frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
+                    frame.buffer = Framebuffer::new(&dev.device.device, &sfs.swapchain.images[i], &pass);
                 }
                 continue;
             }
