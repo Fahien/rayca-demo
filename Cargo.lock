@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#bee08a656f8bf8ee5ea570e0e087eb2dd6b2a6f2"
+source = "git+https://github.com/Fahien/rayca-core#bea5b7127740974f519d704f6f32d442ab988330"
 dependencies = [
  "ash",
  "png",
@@ -1295,10 +1295,8 @@ dependencies = [
 name = "rayca-demo"
 version = "0.2.0"
 dependencies = [
- "rayca-core",
- "rayca-gltf",
  "rayca-gui",
- "rayca-pipe",
+ "rayca-pipeline",
 ]
 
 [[package]]
@@ -1349,6 +1347,15 @@ dependencies = [
  "quote",
  "slang",
  "syn",
+]
+
+[[package]]
+name = "rayca-pipeline"
+version = "0.1.0"
+source = "git+https://github.com/Fahien/rayca-pipeline#a8c59f3ef5ec57bb3539ea6b4f6b0eac59c8823f"
+dependencies = [
+ "rayca-core",
+ "rayca-pipe",
 ]
 
 [[package]]
