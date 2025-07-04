@@ -144,34 +144,18 @@ fn android_main(app: AndroidApp) {
 fn main_loop(mut win: Win) {
     let mut timer = Timer::new();
 
-    let mut events = Events::new(&mut win);
-
-    let vkr = Vkr::new(&win);
-
-    loop {
-        events.update(&mut win);
-        if win.window.is_some() || win.exit {
-            break;
-        }
-    }
-
-    let surface = Surface::new(&win, &vkr.ctx);
-    let mut dev = Dev::new(&vkr.ctx, Some(&surface));
-
-    let pass = Pass::new(&dev);
-
+    let mut vkr = Vkr::new(&mut win);
     let (width, height) = (win.size.width, win.size.height);
-    let mut sfs = SwapchainFrames::new(&vkr.ctx, &surface, &mut dev, width, height, &pass);
 
     let main_pipeline = PipelineMain::new::<Vertex>(
         #[cfg(target_os = "android")]
         &win.android_app,
-        &pass,
+        &vkr.pass,
     );
     let line_pipeline = PipelineLine::new::<LineVertex>(
         #[cfg(target_os = "android")]
         &win.android_app,
-        &pass,
+        &vkr.pass,
     );
 
     let mut pipelines = Vec::<Box<dyn RenderPipeline>>::new();
@@ -181,9 +165,9 @@ fn main_loop(mut win: Win) {
     let mut gui = Gui::new(
         #[cfg(target_os = "android")]
         &win.android_app,
-        sfs.frames.len(),
-        &dev.allocator,
-        &pass,
+        vkr.frames.frames.len(),
+        &vkr.dev.allocator,
+        &vkr.pass,
     );
 
     let mut model = RenderModel::default();
@@ -207,9 +191,9 @@ fn main_loop(mut win: Win) {
         "images/test.png",
     );
     let mut png = Png::new(asset);
-    let image = RenderImage::load(&dev, &mut png);
-    let view = ImageView::new(&dev.device.device, &image);
-    let sampler = RenderSampler::new(&dev.device.device);
+    let image = RenderImage::load(&vkr.dev, &mut png);
+    let view = ImageView::new(&vkr.dev.device.device, &image);
+    let sampler = RenderSampler::new(&vkr.dev.device.device);
     let texture = RenderTexture::new(&view, &sampler);
 
     model.images.push(image);
@@ -226,7 +210,7 @@ fn main_loop(mut win: Win) {
             LineVertex::new(Point3::new(-0.5, 0.5, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
             LineVertex::new(Point3::new(-0.5, -0.5, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
         ];
-        RenderPrimitive::new(&dev.allocator, &lines_vertices)
+        RenderPrimitive::new(&vkr.dev.allocator, &lines_vertices)
     };
     model.primitives.push(line_primitives);
 
@@ -270,7 +254,7 @@ fn main_loop(mut win: Win) {
                 .uv(Vec2::new(1.0, 1.0))
                 .build(),
         ];
-        let mut primitive = RenderPrimitive::new(&dev.allocator, &vertices);
+        let mut primitive = RenderPrimitive::new(&vkr.dev.allocator, &vertices);
         let indices = vec![0, 1, 2, 1, 3, 2];
         primitive.set_indices(&indices);
         primitive
@@ -300,7 +284,7 @@ fn main_loop(mut win: Win) {
     model.gltf.scene.push(rect);
 
     loop {
-        events.update(&mut win);
+        vkr.update(&mut win);
         if win.exit {
             break;
         }
@@ -313,77 +297,31 @@ fn main_loop(mut win: Win) {
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
         model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
 
-        let (width, height) = (win.size.width, win.size.height);
-        let camera = model.gltf.cameras.get_mut(camera).unwrap();
-        *camera = Camera::orthographic(width as f32 / 480.0, height as f32 / 480.0, 0.1, 1.0);
-
-        if win.resized {
-            dev.wait();
-            drop(sfs.swapchain);
-            // Current must be reset to avoid LAYOUT_UNDEFINED validation errors
-            sfs.current = 0;
-            sfs.swapchain = Swapchain::new(&vkr.ctx, &surface, &dev, width, height);
-            for i in 0..sfs.swapchain.images.len() {
-                let frame = &mut sfs.frames[i];
-                // Only this semaphore must be recreated to avoid validation errors
-                // The image drawn one is still in use at the moment
-                frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
-            }
-            win.resized = false;
+        {
+            // Update camera
+            let camera = model.gltf.cameras.get_mut(camera).unwrap();
+            *camera = Camera::orthographic(
+                win.size.width as f32 / 480.0,
+                win.size.height as f32 / 480.0,
+                0.1,
+                1.0,
+            );
         }
-
-        let frame = sfs.next_frame();
-
-        if frame.is_err() {
-            let result = frame.err().unwrap();
-            if result != vk::Result::ERROR_OUT_OF_DATE_KHR {
-                panic!("{:?}", result);
-            }
-
-            dev.wait();
-            drop(sfs.swapchain);
-            sfs.swapchain = Swapchain::new(&vkr.ctx, &surface, &dev, width, height);
-            for i in 0..sfs.swapchain.images.len() {
-                let frame = &mut sfs.frames[i];
-                // Only this semaphore must be recreated to avoid validation errors
-                // The image drawn one is still in use at the moment
-                frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
-            }
-
+        let frame = vkr.next_frame(&win).unwrap();
+        let Some(mut frame) = frame else {
             continue;
         };
 
-        let frame = frame.unwrap();
         frame.begin(&model);
-        gui.update(delta, &win.input, frame);
-        frame.begin_render(&pass);
+        gui.update(delta, &win.input, &mut frame);
+        frame.begin_render(&vkr.pass);
         frame.draw(&model, &pipelines);
-        gui.draw(frame);
+        gui.draw(&mut frame);
         frame.end();
 
-        match sfs.present(&dev) {
-            // Recreate swapchain
-            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
-                dev.wait();
-                drop(sfs.swapchain);
-                sfs.swapchain =
-                    Swapchain::new(&vkr.ctx, &surface, &dev, win.size.width, win.size.height);
-                for i in 0..sfs.swapchain.images.len() {
-                    let frame = &mut sfs.frames[i];
-                    // Semaphores must be recreated to avoid validation errors
-                    frame.cache.image_ready = Semaphore::new(&dev.device.device);
-                    frame.cache.image_drawn = Semaphore::new(&dev.device.device);
-                    frame.buffer = Framebuffer::new(&dev, &sfs.swapchain.images[i], &pass);
-                }
-                continue;
-            }
-            Err(result) => panic!("{:?}", result),
-            _ => (),
-        }
+        vkr.present(&win, frame).unwrap();
     }
 
     // Make sure device is idle before releasing Vulkan resources
-    dev.wait();
+    vkr.dev.wait();
 }
