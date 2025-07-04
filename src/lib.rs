@@ -357,7 +357,7 @@ fn main_loop(mut win: Win) {
 
         let frame = frame.unwrap();
         frame.begin(&model);
-        gui.update(frame);
+        gui.update(delta, &win.input, frame);
         frame.begin_render(&pass);
         frame.draw(&model, &pipelines);
         gui.draw(frame);
