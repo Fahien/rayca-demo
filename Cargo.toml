@@ -15,7 +15,5 @@ path = "src/lib.rs"
 name = "rayca_demo"
 
 [dependencies]
-rayca-core = { git = "https://github.com/Fahien/rayca-core" }
-rayca-pipe = { git = "https://github.com/Fahien/rayca-pipe" }
-rayca-gltf = { git = "https://github.com/Fahien/rayca-gltf" }
+rayca-pipeline = { git = "https://github.com/Fahien/rayca-pipeline" }
 rayca-gui = { git = "https://github.com/Fahien/rayca-gui" }
