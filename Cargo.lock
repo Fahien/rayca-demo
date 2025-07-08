@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#c8bd617d8972e133b079eb3abe335f396c47f809"
+source = "git+https://github.com/Fahien/rayca-core#6a4a053e76410da120e49e27a0d87c079d9c4729"
 dependencies = [
  "ash",
  "png",
@@ -1302,7 +1302,7 @@ dependencies = [
 [[package]]
 name = "rayca-geometry"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-geometry#c268793d190464e576dc492885bec555a59faa35"
+source = "git+https://github.com/Fahien/rayca-geometry#45110ad14196a4decdc0aa4cf238c211fac86fde"
 dependencies = [
  "rayca-math",
  "rayca-util",
@@ -1311,8 +1311,9 @@ dependencies = [
 [[package]]
 name = "rayca-gltf"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gltf#e64c97ff39de6d7fbd3d46e8912c64b2bc7b40f4"
+source = "git+https://github.com/Fahien/rayca-gltf#6d9b184a635578f26d44b838b087fb81a8e77ab6"
 dependencies = [
+ "rayca-geometry",
  "rayca-math",
  "rayca-util",
 ]
@@ -1320,7 +1321,7 @@ dependencies = [
 [[package]]
 name = "rayca-gui"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gui#8c184e5ac2e34d004ad5bd3643658ead260e93e7"
+source = "git+https://github.com/Fahien/rayca-gui#e7198852cfed5f0f1739cffa674f5fae88aa3c33"
 dependencies = [
  "egui",
  "memoffset",

@@ -132,8 +132,8 @@ fn main_loop(mut win: Win) {
                 .build(),
         ];
         let mut primitive = RenderPrimitive::new(&vkr.dev.allocator, &vertices);
-        let indices = vec![0, 1, 2, 1, 3, 2];
-        primitive.set_indices(&indices);
+        let indices: Vec<u16> = vec![0, 1, 2, 1, 3, 2];
+        primitive.set_indices(indices.as_bytes(), vk::IndexType::UINT16);
         primitive
     };
 
