@@ -5,12 +5,14 @@
 import vertex;
 
 [vk::binding(0, 2)]
-ConstantBuffer<float4> material_color;
+ConstantBuffer<float4> color;
 [vk::binding(1, 2)]
-Texture2D texture;
+Texture2D albedo;
+[vk::binding(1, 2)]
+SamplerState s;
 
 [shader("fragment")]
-float4 main(in Vertex vertex) : SV_Target {
-    SamplerState s;
-    return vertex.color * material_color * texture.Sample(s, vertex.uv);
+float4 main(in Vertex vertex) : SV_Target
+{
+    return vertex.color * color * albedo.Sample(s, vertex.uv);
 }
