@@ -199,9 +199,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.27"
+version = "1.2.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d487aa071b5f64da6f19a3e848e3578944b726ee5a4854b82172f02aa876bfdc"
+checksum = "5c1599538de2394445747c8cf7935946e3cc27e9625f889d979bfb2aaf569362"
 dependencies = [
  "jobserver",
  "libc",
@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#bea5b7127740974f519d704f6f32d442ab988330"
+source = "git+https://github.com/Fahien/rayca-core#3b46e0051455badcb22aaa545309ace3e1e8adc5"
 dependencies = [
  "ash",
  "png",
@@ -1311,7 +1311,7 @@ dependencies = [
 [[package]]
 name = "rayca-gltf"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gltf#6b5c9bf70d9617ca93c21f7cf49a42cf7f0ab4b8"
+source = "git+https://github.com/Fahien/rayca-gltf#e64c97ff39de6d7fbd3d46e8912c64b2bc7b40f4"
 dependencies = [
  "rayca-math",
  "rayca-util",
@@ -1331,7 +1331,7 @@ dependencies = [
 [[package]]
 name = "rayca-math"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-math#9fc420ec7a7d97362aa375ba3e120c3b1332e17d"
+source = "git+https://github.com/Fahien/rayca-math#878ed3aab63bb2691d3ff01a07c9144bd22362e3"
 dependencies = [
  "num-traits",
  "rand",
@@ -1352,7 +1352,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-pipeline#a8c59f3ef5ec57bb3539ea6b4f6b0eac59c8823f"
+source = "git+https://github.com/Fahien/rayca-pipeline#70780c9861ed634bf77984cef52702a2feb2479e"
 dependencies = [
  "rayca-core",
  "rayca-pipe",

@@ -12,11 +12,12 @@ ConstantBuffer<float4x4> view;
 ConstantBuffer<float4x4> proj;
 
 [shader("vertex")]
-Vertex main(float4 pos, float4 color, float2 uv)
+Vertex main(float4 pos, float4 color, float4 normal, float2 uv)
 {
     Vertex out;
     out.pos = mul(proj, mul(view, mul(model, pos)));
     out.color = color;
+    out.normal = normal;
     out.uv = uv;
     return out;
 }

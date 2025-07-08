@@ -5,12 +5,12 @@
 import vertex;
 
 [vk::binding(0, 2)]
+ConstantBuffer<float4> material_color;
+[vk::binding(1, 2)]
 Texture2D texture;
-[vk::binding(0, 2)]
-SamplerState sampler;
 
 [shader("fragment")]
-float4 main(in Vertex vertex) : SV_Target
-{
-    return vertex.color * texture.Sample(sampler, vertex.uv);
+float4 main(in Vertex vertex) : SV_Target {
+    SamplerState s;
+    return vertex.color * material_color * texture.Sample(s, vertex.uv);
 }
