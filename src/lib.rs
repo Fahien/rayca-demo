@@ -160,6 +160,33 @@ fn main_loop(mut win: Win) {
     );
     model.gltf.scene.push(rect);
 
+    let cyan_material_handle = model
+        .gltf
+        .materials
+        .push(Material::builder().color(Color::CYAN).shader(0).build());
+    let cube_primitive = RenderPrimitive::cube(&vkr.dev.allocator);
+    let cube_primitive_handle = model
+        .gltf
+        .primitives
+        .push(Primitive::builder().material(cyan_material_handle).build());
+    let cube_mesh = model
+        .gltf
+        .meshes
+        .push(Mesh::builder().primitive(cube_primitive_handle).build());
+    model.primitives.push(cube_primitive);
+
+    let cube = model.gltf.nodes.push(
+        Node::builder()
+            .trs(
+                Trs::builder()
+                    .translation(Vec3::new(-0.5, -0.5, 0.0))
+                    .build(),
+            )
+            .mesh(cube_mesh)
+            .build(),
+    );
+    model.gltf.scene.push(cube);
+
     loop {
         vkr.update(&mut win);
         if win.exit {

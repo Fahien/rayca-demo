@@ -7,5 +7,6 @@ module vertex;
 public struct Vertex {
     public float4 pos : SV_Position;
     public float4 color;
+    public float4 normal;
     public float2 uv;
 };
