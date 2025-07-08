@@ -47,9 +47,9 @@ fn main_loop(mut win: Win) {
         &vkr.pass,
     );
 
-    let mut model = RenderModel::default();
+    let mut model = RenderModel::new(&vkr.dev.allocator);
 
-    let camera = model.gltf.cameras.push(Camera::orthographic(
+    let camera = model.push_camera(Camera::orthographic(
         width as f32 / 480.0,
         height as f32 / 480.0,
         0.1,
@@ -59,8 +59,8 @@ fn main_loop(mut win: Win) {
         .camera(camera)
         .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 0.0)).build())
         .build();
-    let camera_node_handle = model.gltf.nodes.push(camera_node);
-    model.gltf.scene.push(camera_node_handle);
+    let camera_node_handle = model.push_node(camera_node);
+    model.push_to_scene(camera_node_handle);
 
     let asset = Asset::load(
         #[cfg(target_os = "android")]
@@ -78,39 +78,54 @@ fn main_loop(mut win: Win) {
     model.samplers.push(sampler);
     let texture_handle = model.textures.push(texture);
 
-    let line_primitives = {
+    let lines_material = model.push_material(Material::builder().shader(1).build());
+
+    let lines_primitive = {
         // Notice how the first line appears at the top of the picture as Vulkan Y axis is pointing downwards
-        let lines_vertices = vec![
-            LineVertex::new(Point3::new(-0.5, -0.5, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
-            LineVertex::new(Point3::new(0.5, -0.5, 0.0), Color::new(1.0, 1.0, 0.0, 1.0)),
-            LineVertex::new(Point3::new(0.5, 0.5, 0.0), Color::new(1.0, 0.5, 0.0, 1.0)),
-            LineVertex::new(Point3::new(-0.5, 0.5, 0.0), Color::new(1.0, 0.1, 0.0, 1.0)),
-            LineVertex::new(Point3::new(-0.5, -0.5, 0.0), Color::new(1.0, 0.0, 0.3, 1.0)),
+        let vertices = vec![
+            Vertex::builder()
+                .position(Point3::new(-0.5, -0.5, 0.0))
+                .color(Color::new(1.0, 1.0, 0.0, 1.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(0.5, -0.5, 0.0))
+                .color(Color::new(1.0, 1.0, 0.0, 1.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(0.5, 0.5, 0.0))
+                .color(Color::new(1.0, 0.5, 0.0, 1.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(-0.5, 0.5, 0.0))
+                .color(Color::new(1.0, 0.1, 0.0, 1.0))
+                .build(),
+            Vertex::builder()
+                .position(Point3::new(-0.5, -0.5, 0.0))
+                .color(Color::new(1.0, 0.0, 0.3, 1.0))
+                .build(),
         ];
-        RenderPrimitive::new(&vkr.dev.allocator, &lines_vertices)
+        Primitive::builder()
+            .vertices(vertices)
+            .mode(PrimitiveMode::Lines)
+            .material(lines_material)
+            .build()
     };
-    model.primitives.push(line_primitives);
 
-    let lines_material = model
-        .gltf
-        .materials
-        .push(Material::builder().shader(1).build());
-
-    let lines_primitive_handle = model
-        .gltf
-        .primitives
-        .push(Primitive::builder().material(lines_material).build());
-    let lines_mesh = model
-        .gltf
-        .meshes
-        .push(Mesh::builder().primitive(lines_primitive_handle).build());
-    let lines = model.gltf.nodes.push(
+    let lines_primitive_handle = model.push_primitive(lines_primitive);
+    let lines_mesh = model.push_mesh(Mesh::builder().primitive(lines_primitive_handle).build());
+    let lines = model.push_node(
         Node::builder()
             .trs(Trs::builder().translation(Vec3::new(0.5, 0.5, 0.3)).build())
             .mesh(lines_mesh)
             .build(),
     );
-    model.gltf.scene.push(lines);
+    model.push_to_scene(lines);
+
+    let rect_material = model.push_material(
+        Material::builder()
+            .texture(texture_handle.id.into())
+            .build(),
+    );
 
     let rect_primitive = {
         let vertices = vec![
@@ -131,54 +146,47 @@ fn main_loop(mut win: Win) {
                 .uv(Vec2::new(1.0, 1.0))
                 .build(),
         ];
-        let mut primitive = RenderPrimitive::new(&vkr.dev.allocator, &vertices);
-        let indices: Vec<u16> = vec![0, 1, 2, 1, 3, 2];
-        primitive.set_indices(indices.as_bytes(), vk::IndexType::UINT16);
-        primitive
+        let indices: Vec<u8> = vec![0, 1, 2, 1, 3, 2];
+
+        Primitive::builder()
+            .vertices(vertices)
+            .indices(
+                PrimitiveIndices::builder()
+                    .indices(indices)
+                    .index_type(ComponentType::U8)
+                    .build(),
+            )
+            .material(rect_material)
+            .build()
     };
 
-    let rect_material = model.gltf.materials.push(
-        Material::builder()
-            .texture(texture_handle.id.into())
-            .build(),
-    );
-    let rect_primitive_handle = model
-        .gltf
-        .primitives
-        .push(Primitive::builder().material(rect_material).build());
-    let rect_mesh = model
-        .gltf
-        .meshes
-        .push(Mesh::builder().primitive(rect_primitive_handle).build());
-    model.primitives.push(rect_primitive);
+    let rect_primitive_handle = model.push_primitive(rect_primitive);
+    let rect_mesh = model.push_mesh(Mesh::builder().primitive(rect_primitive_handle).build());
 
-    let rect = model.gltf.nodes.push(
+    let rect = model.push_node(
         Node::builder()
             .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 0.2)).build())
             .mesh(rect_mesh)
             .build(),
     );
-    model.gltf.scene.push(rect);
+    model.push_to_scene(rect);
 
-    let cyan_material_handle = model.gltf.materials.push(
+    let cyan_material_handle = model.push_material(
         Material::builder()
             .color(Color::CYAN)
             .texture(texture_handle.id.into())
             .shader(0)
             .build(),
     );
-    let cube_primitive = RenderPrimitive::cube(&vkr.dev.allocator);
-    let cube_primitive_handle = model
-        .gltf
-        .primitives
-        .push(Primitive::builder().material(cyan_material_handle).build());
-    let cube_mesh = model
-        .gltf
-        .meshes
-        .push(Mesh::builder().primitive(cube_primitive_handle).build());
-    model.primitives.push(cube_primitive);
+    let cube_primitive_handle = model.push_primitive(
+        Primitive::builder()
+            .cube()
+            .material(cyan_material_handle)
+            .build(),
+    );
+    let cube_mesh = model.push_mesh(Mesh::builder().primitive(cube_primitive_handle).build());
 
-    let cube = model.gltf.nodes.push(
+    let cube = model.push_node(
         Node::builder()
             .trs(
                 Trs::builder()
@@ -188,7 +196,7 @@ fn main_loop(mut win: Win) {
             .mesh(cube_mesh)
             .build(),
     );
-    model.gltf.scene.push(cube);
+    model.push_to_scene(cube);
 
     loop {
         vkr.update(&mut win);
@@ -199,14 +207,14 @@ fn main_loop(mut win: Win) {
         let delta = timer.get_delta().as_secs_f32();
 
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), delta / 2.0);
-        model.gltf.nodes.get_mut(rect).unwrap().trs.rotate(rot);
+        model.get_node_mut(rect).unwrap().trs.rotate(rot);
 
         let rot = Quat::axis_angle(Vec3::new(0.0, 0.0, 1.0), -delta / 2.0);
-        model.gltf.nodes.get_mut(lines).unwrap().trs.rotate(rot);
+        model.get_node_mut(lines).unwrap().trs.rotate(rot);
 
         {
             // Update camera
-            let camera = model.gltf.cameras.get_mut(camera).unwrap();
+            let camera = model.get_camera_mut(camera).unwrap();
             *camera = Camera::orthographic(
                 win.size.width as f32 / 480.0,
                 win.size.height as f32 / 480.0,

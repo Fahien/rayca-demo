@@ -2,9 +2,9 @@
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
-import line_vertex;
+module line_vertex;
 
-[shader("fragment")]
-float4 main(in Vertex vertex) : SV_Target {
-    return vertex.color;
-}
+public struct Vertex {
+    public float4 pos : SV_Position;
+    public float4 color;
+};

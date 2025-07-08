@@ -2,7 +2,7 @@
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
-import vertex;
+import line_vertex;
 
 ConstantBuffer<float4x4> model;
 
