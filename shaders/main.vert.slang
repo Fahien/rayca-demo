@@ -4,7 +4,10 @@
 
 import vertex;
 
+[vk::binding(0, 0)]
 ConstantBuffer<float4x4> model;
+[vk::binding(1, 0)]
+ConstantBuffer<float4x4> normal_matrix;
 
 [vk::binding(0, 1)]
 ConstantBuffer<float4x4> view;
@@ -17,7 +20,8 @@ Vertex main(float4 pos, float4 color, float4 normal, float2 uv)
     Vertex out;
     out.pos = mul(proj, mul(view, mul(model, pos)));
     out.color = color;
-    out.normal = normal;
-    out.uv = uv;
+    out.normal = mul(normal_matrix, normal);
+    out.uv.x = uv.x;
+    out.uv.y = 1.0 - uv.y;
     return out;
 }
