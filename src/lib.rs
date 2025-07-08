@@ -160,10 +160,13 @@ fn main_loop(mut win: Win) {
     );
     model.gltf.scene.push(rect);
 
-    let cyan_material_handle = model
-        .gltf
-        .materials
-        .push(Material::builder().color(Color::CYAN).shader(0).build());
+    let cyan_material_handle = model.gltf.materials.push(
+        Material::builder()
+            .color(Color::CYAN)
+            .texture(texture_handle.id.into())
+            .shader(0)
+            .build(),
+    );
     let cube_primitive = RenderPrimitive::cube(&vkr.dev.allocator);
     let cube_primitive_handle = model
         .gltf
