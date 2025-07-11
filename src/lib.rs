@@ -229,6 +229,7 @@ fn main_loop(mut win: Win) {
             .show(gui_ctx, |ui| {
                 ui.radio_value(&mut current_pipeline, 0, "present");
                 ui.radio_value(&mut current_pipeline, 1, "normal");
+                ui.radio_value(&mut current_pipeline, 2, "depth");
             });
 
         gui.end(&mut frame);
@@ -236,10 +237,11 @@ fn main_loop(mut win: Win) {
         frame.begin_render(&vkr.pass);
         frame.draw(&model, &pipelines);
 
-        if current_pipeline == 0 {
-            frame.end_scene(&vkr.present_pipeline);
-        } else {
-            frame.end_scene(&vkr.normal_pipeline);
+        match current_pipeline {
+            0 => frame.end_scene(&vkr.present_pipeline),
+            1 => frame.end_scene(&vkr.normal_pipeline),
+            2 => frame.end_scene(&vkr.depth_pipeline),
+            _ => unreachable!(),
         };
 
         gui.draw(&mut frame);
