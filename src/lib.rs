@@ -112,7 +112,7 @@ fn main_loop(mut win: Win) {
 
     let rect_material = model.push_material(
         Material::builder()
-            .texture(texture_handle.id.into())
+            .albedo(texture_handle.id.into())
             .build(),
     );
 
@@ -163,7 +163,7 @@ fn main_loop(mut win: Win) {
     let cyan_material_handle = model.push_material(
         Material::builder()
             .color(Color::CYAN)
-            .texture(texture_handle.id.into())
+            .albedo(texture_handle.id.into())
             .shader(0)
             .build(),
     );

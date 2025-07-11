@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#c8b2123c115c1afcdd4564b2b70f8f84ee018c95"
+source = "git+https://github.com/Fahien/rayca-core#5a739de743b80decf9a97584ddbff6c64f81f046"
 dependencies = [
  "ash",
  "png",
@@ -1312,7 +1312,7 @@ dependencies = [
 [[package]]
 name = "rayca-gltf"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gltf#2d20f22ff91032c951c37dfeebd7af6e82cad50a"
+source = "git+https://github.com/Fahien/rayca-gltf#197044d30c903135cdfec33726ab1b83d037c083"
 dependencies = [
  "rayca-geometry",
  "rayca-math",
@@ -1354,7 +1354,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-pipeline#d798d982b1ea51c930860bda64fc1eb509cd6b10"
+source = "git+https://github.com/Fahien/rayca-pipeline#3eb4531c572130f2fde61f398df2b5c432f37094"
 dependencies = [
  "rayca-core",
  "rayca-pipe",
