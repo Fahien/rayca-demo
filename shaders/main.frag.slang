@@ -11,8 +11,15 @@ Texture2D albedo;
 [vk::binding(1, 2)]
 SamplerState s;
 
+struct Output {
+    float4 color : SV_Target0;
+    float4 normal : SV_Target1;
+}
+
 [shader("fragment")]
-float4 main(in Vertex vertex) : SV_Target
-{
-    return vertex.color * color * albedo.Sample(s, vertex.uv);
+Output main(in Vertex vertex) {
+    Output o;
+    o.color = vertex.color * color * albedo.Sample(s, vertex.uv);
+    o.normal = (normalize(vertex.normal) + 1.0) / 2.0;
+    return o;
 }

@@ -220,7 +220,7 @@ fn main_loop(mut win: Win) {
         gui.update(delta, &win.input, &mut frame);
         frame.begin_render(&vkr.pass);
         frame.draw(&model, &pipelines);
-        frame.end_scene(&vkr.present_pipeline);
+        frame.end_scene(&vkr.normal_pipeline);
         gui.draw(&mut frame);
 
         vkr.present(&win, frame).unwrap();
