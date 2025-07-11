@@ -187,6 +187,8 @@ fn main_loop(mut win: Win) {
     );
     model.push_to_scene(cube);
 
+    let mut current_pipeline = 0;
+
     loop {
         vkr.update(&mut win);
         if win.exit {
@@ -217,12 +219,30 @@ fn main_loop(mut win: Win) {
         };
 
         frame.begin(&model);
-        gui.update(delta, &win.input, &mut frame);
+
+        let gui_ctx = gui.begin(delta, &win.input, frame.get_size());
+
+        egui::Window::new("Switch")
+            .auto_sized()
+            .collapsible(false)
+            .fixed_pos(egui::pos2(32.0, 32.0))
+            .show(gui_ctx, |ui| {
+                ui.radio_value(&mut current_pipeline, 0, "present");
+                ui.radio_value(&mut current_pipeline, 1, "normal");
+            });
+
+        gui.end(&mut frame);
+
         frame.begin_render(&vkr.pass);
         frame.draw(&model, &pipelines);
-        frame.end_scene(&vkr.normal_pipeline);
-        gui.draw(&mut frame);
 
+        if current_pipeline == 0 {
+            frame.end_scene(&vkr.present_pipeline);
+        } else {
+            frame.end_scene(&vkr.normal_pipeline);
+        };
+
+        gui.draw(&mut frame);
         vkr.present(&win, frame).unwrap();
     }
 
