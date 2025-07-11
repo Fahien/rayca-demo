@@ -1374,7 +1374,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#b950b5065034b37c241bc1443ddeeb5a6ace2248"
+source = "git+https://github.com/Fahien/rayca-core#8b7211807c4534ab0c80723b541811b9e02da763"
 dependencies = [
  "ash",
  "png",
@@ -1419,7 +1419,7 @@ dependencies = [
 [[package]]
 name = "rayca-gui"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gui#4d710f81fca88dc11ac3db2942bd0e34534126fa"
+source = "git+https://github.com/Fahien/rayca-gui#887be15ed5c117204c27a7c969d0f1bdb31a0378"
 dependencies = [
  "egui",
  "memoffset",
@@ -1440,7 +1440,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipe"
 version = "0.0.1"
-source = "git+https://github.com/Fahien/rayca-pipe#785c2de954c4a68085a317b8afe5b5e3966bc0a8"
+source = "git+https://github.com/Fahien/rayca-pipe#7f5d679ab4a446c0314ec412d97af3217f080495"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1451,7 +1451,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-pipeline#b707ec01ad632017151d160115ca9c9cea5fa1ed"
+source = "git+https://github.com/Fahien/rayca-pipeline#2bcd08c1db3edbdf20bc0a28f25d32ef7f5d1d9b"
 dependencies = [
  "rayca-core",
  "rayca-pipe",

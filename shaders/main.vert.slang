@@ -22,6 +22,6 @@ Vertex main(float4 pos, float4 color, float4 normal, float2 uv)
     out.color = color;
     out.normal = mul(normal_matrix, normal);
     out.uv.x = uv.x;
-    out.uv.y = 1.0 - uv.y;
+    out.uv.y = uv.y;
     return out;
 }
