@@ -47,7 +47,7 @@ fn main_loop(mut win: Win) {
         &vkr.pass,
     );
 
-    let mut model = RenderModel::new(&vkr.dev.allocator);
+    let mut model = RenderModel::new(&vkr.dev);
 
     let camera = model.push_camera(Camera::orthographic(
         width as f32 / 480.0,
@@ -62,21 +62,10 @@ fn main_loop(mut win: Win) {
     let camera_node_handle = model.push_node(camera_node);
     model.push_to_scene(camera_node_handle);
 
-    let asset = Asset::load(
-        #[cfg(target_os = "android")]
-        &win.android_app,
-        "images/test.png",
-    );
-    let mut png = Png::new(asset);
-    let image = RenderImage::load(&vkr.dev, &mut png);
-    let view = ImageView::new(&vkr.dev.device.device, &image);
-    let sampler = RenderSampler::new(&vkr.dev.device.device);
-    let texture = RenderTexture::new(&view, &sampler);
-
-    model.images.push(image);
-    model.views.push(view);
-    model.samplers.push(sampler);
-    let texture_handle = model.textures.push(texture);
+    let image = Image::builder().uri("images/test.png").build();
+    let image_handle = model.push_image(image, &vkr.assets);
+    let sampler_handle = model.push_sampler(Sampler::default());
+    let texture_handle = model.push_texture(Texture::new(image_handle, sampler_handle));
 
     let lines_material = model.push_material(Material::builder().shader(1).build());
 
