@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#c3290ba0e2f068dbab649c37058520c93068a3fb"
+source = "git+https://github.com/Fahien/rayca-core#7573b0964e26b15f8904323f93ff135c4db5f48f"
 dependencies = [
  "ash",
  "png",
@@ -1322,7 +1322,7 @@ dependencies = [
 [[package]]
 name = "rayca-gui"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gui#dcaea46159a962b7af3ae84dde41e3080c11bcdc"
+source = "git+https://github.com/Fahien/rayca-gui#069b62bf61a28253c6c1b2b8904be3c71248255f"
 dependencies = [
  "egui",
  "memoffset",
@@ -1354,7 +1354,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-pipeline#60d531ac65c6adb3b07e8f7fcdb0e6feb608bc21"
+source = "git+https://github.com/Fahien/rayca-pipeline#ec1a903df00fb16f9f855ba25eb5da22dd70fb00"
 dependencies = [
  "rayca-core",
  "rayca-pipe",
