@@ -7,7 +7,7 @@ use rayca_pipeline::*;
 
 #[cfg(not(target_os = "android"))]
 pub fn main() {
-    let win = Win::builder().build();
+    let win = Win::builder().size(Size2::new(1920, 1024)).build();
     main_loop(win);
 }
 
@@ -55,9 +55,9 @@ fn main_loop(mut win: Win) {
         Model::load_gltf_path(model_path, &vkr.assets).expect("Failed to open gltf model");
     let mut model = RenderModel::new_with_gltf(&vkr.dev, &vkr.assets, gltf_model);
 
-    let camera = model.push_camera(Camera::infinite_perspective(1.0, 3.14 / 4.0, 0.1));
+    let camera_handle = model.push_camera(Camera::infinite_perspective(1.0, 3.14 / 4.0, 0.1));
     let camera_node = Node::builder()
-        .camera(camera)
+        .camera(camera_handle)
         .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 4.0)).build())
         .build();
     let camera_node_handle = model.push_node(camera_node);
@@ -66,25 +66,43 @@ fn main_loop(mut win: Win) {
     let mut current_pipeline = 0;
 
     loop {
+        win.input.update();
         vkr.update(&mut win);
         if win.exit {
             break;
+        }
+
+        // Update camera for window size
+        {
+            let camera = model.get_camera_mut(camera_handle).unwrap();
+            *camera = Camera::infinite_perspective(
+                win.size.width as f32 / win.size.height as f32,
+                3.14 / 4.0,
+                0.1,
+            );
         }
 
         let delta = timer.get_delta().as_secs_f32();
 
         // Move camera
         let camera_node = model.get_node_mut(camera_node_handle).unwrap();
-        let mut camera_z_move = 0.0;
-        if win.input.w.is_down() {
-            camera_z_move -= 1.0 * delta;
+
+        let mut camera_movement = Vec3::ZERO;
+        if win.input.mouse.movement != Vec2::ZERO && win.input.mouse.left.is_down() {
+            // Mouse uses screen coordinates with inverted Y axis.
+            // On the other hand, camera movement should be the opposite of the natural movement of the mouse,
+            // hence only the X axis is inverted here.
+            camera_movement = win.input.mouse.movement.extend(0.0) * Vec3::new(-1.0, 1.0, 1.0);
         }
-        if win.input.s.is_down() {
-            camera_z_move += 1.0 * delta;
-        }
-        camera_node
-            .trs
-            .translate(Vec3::new(0.0, 0.0, camera_z_move));
+        let camera_z = if win.input.w.is_down() {
+            -1.0
+        } else if win.input.s.is_down() {
+            1.0
+        } else {
+            0.0
+        };
+        camera_movement.set_z(camera_z);
+        camera_node.trs.translate(camera_movement * delta);
 
         {
             // Update camera
