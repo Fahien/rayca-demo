@@ -2,3 +2,4 @@ android:
   assets:
     - shaders
     - images
+    - models

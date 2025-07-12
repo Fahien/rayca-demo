@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#7f98fcd7c9500a2be1e595b0aebd7244036d063d"
+source = "git+https://github.com/Fahien/rayca-core#7bc14f36a0e4daac311977582e743075094fb476"
 dependencies = [
  "ash",
  "image",
@@ -1847,7 +1847,7 @@ dependencies = [
 [[package]]
 name = "rayca-gltf"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gltf#74fe23eb3194373395c7fdd9640a425bfbf856f7"
+source = "git+https://github.com/Fahien/rayca-gltf#344a95fe25ce3d3134c4cb8b3dbe28a64ad860c7"
 dependencies = [
  "base64 0.22.1",
  "gltf",
@@ -1859,7 +1859,7 @@ dependencies = [
 [[package]]
 name = "rayca-gui"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gui#887be15ed5c117204c27a7c969d0f1bdb31a0378"
+source = "git+https://github.com/Fahien/rayca-gui#f3fcfe0153b8bcc1c84e217248866817863f4ee1"
 dependencies = [
  "egui",
  "memoffset",
@@ -1900,10 +1900,11 @@ dependencies = [
 [[package]]
 name = "rayca-util"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-util#459d17ff1060d42ffcaacbc9fd5ce8c96a4c13dd"
+source = "git+https://github.com/Fahien/rayca-util#56c9d34af43c517206b0bb291eb77306e510e976"
 dependencies = [
  "instant",
  "owo-colors",
+ "winit",
 ]
 
 [[package]]

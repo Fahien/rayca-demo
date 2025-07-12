@@ -49,9 +49,8 @@ fn main_loop(mut win: Win) {
     // Get model path from CLI
     let model_path = std::env::args()
         .nth(1)
-        .expect("Usage: rayca-gltf <model_path>");
-
-    let gltf_model = Model::load_gltf_path(model_path).expect("Failed to open gltf model");
+        .unwrap_or("models/box/Box.gltf".to_string());
+    let gltf_model = Model::load_gltf_path(model_path, &vkr.assets).expect("Failed to open gltf model");
     let mut model = RenderModel::new_with_gltf(&vkr.dev, &vkr.assets, gltf_model);
 
     let camera_handle = model.push_camera(Camera::infinite_perspective(1.0, 3.14 / 4.0, 0.1));
