@@ -34,6 +34,7 @@ fn main() {
                 .arg("spirv")
                 .arg("-profile")
                 .arg("sm_4_0")
+                .arg("-matrix-layout-row-major")
                 .arg("-o")
                 .arg(output_path)
                 .status()

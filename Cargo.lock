@@ -1583,7 +1583,7 @@ dependencies = [
  "concurrent-queue",
  "hermit-abi",
  "pin-project-lite",
- "rustix 1.0.7",
+ "rustix 1.0.8",
  "tracing",
  "windows-sys 0.59.0",
 ]
@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-core#7bf42885a64b9d85a705fac8bfa74551a2f0bb2c"
+source = "git+https://github.com/Fahien/rayca-core#b155049a6bcd090e83fcf7eda46ce160f5adcd21"
 dependencies = [
  "ash",
  "image",
@@ -1822,6 +1822,7 @@ dependencies = [
  "rayca-geometry",
  "rayca-gltf",
  "rayca-pipe",
+ "rayon",
  "slang",
  "vk-mem",
  "winit",
@@ -1838,7 +1839,7 @@ dependencies = [
 [[package]]
 name = "rayca-geometry"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-geometry#2ca5d37ada15b6aa6d78bc35ff230ecbba7ca126"
+source = "git+https://github.com/Fahien/rayca-geometry#e18ea6a334d783e3df4078ea7cd8aa74a5afded0"
 dependencies = [
  "rayca-math",
  "rayca-util",
@@ -1847,7 +1848,7 @@ dependencies = [
 [[package]]
 name = "rayca-gltf"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gltf#344a95fe25ce3d3134c4cb8b3dbe28a64ad860c7"
+source = "git+https://github.com/Fahien/rayca-gltf#352a54087f86ff3c4dffb3dc711fb422c1c06d9b"
 dependencies = [
  "base64 0.22.1",
  "gltf",
@@ -1859,7 +1860,7 @@ dependencies = [
 [[package]]
 name = "rayca-gui"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-gui#17f66fb980cff7a1ff4be391541e45eb78357f84"
+source = "git+https://github.com/Fahien/rayca-gui#840a513831325fd0fe52420f9c840dee3d64bd47"
 dependencies = [
  "egui",
  "memoffset",
@@ -1880,7 +1881,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipe"
 version = "0.0.1"
-source = "git+https://github.com/Fahien/rayca-pipe#2764e7596ddda92ffcb4f0d2419bf2274bb94359"
+source = "git+https://github.com/Fahien/rayca-pipe#e8ac4bb6174f4b091b98c8531b240ef75692fb98"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1891,7 +1892,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/Fahien/rayca-pipeline#afc276a37447e42251dc1ddc7269c1972cc040f2"
+source = "git+https://github.com/Fahien/rayca-pipeline#c216ffe34aefb90ef2b9b6cbaf544ca610503551"
 dependencies = [
  "rayca-core",
  "rayca-pipe",
@@ -1976,9 +1977,9 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "rgb"
-version = "0.8.51"
+version = "0.8.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a457e416a0f90d246a4c3288bd7a25b2304ca727f253f95be383dd17af56be8f"
+checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
 
 [[package]]
 name = "rustc-hash"
@@ -2001,15 +2002,15 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "1.0.7"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c71e83d6afe7ff64890ec6b71d6a69bb8a610ab78ce364b3352876bb4c801266"
+checksum = "11181fbabf243db407ef8df94a6ce0b2f9a733bd8be4ad02b4eda9602296cac8"
 dependencies = [
  "bitflags 2.9.1",
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]

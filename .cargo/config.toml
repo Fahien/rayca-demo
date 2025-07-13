@@ -1,0 +1,2 @@
+[build]
+rustflags = ["-C", "link-args=-Wl,-rpath,/opt/homebrew/Caskroom/vulkan-sdk/1.4.313.1/vulkan-sdk/macOS/lib"]

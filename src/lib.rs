@@ -2,6 +2,8 @@
 // Author: Antonio Caggiano <info@antoniocaggiano.eu>
 // SPDX-License-Identifier: MIT
 
+mod ui;
+
 use rayca_gui::*;
 use rayca_pipeline::*;
 
@@ -58,12 +60,12 @@ fn main_loop(mut win: Win) {
     let camera_handle = model.push_camera(Camera::infinite_perspective(1.0, 3.14 / 4.0, 0.1));
     let camera_node = Node::builder()
         .camera(camera_handle)
-        .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 4.0)).build())
+        .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 3.2)).build())
         .build();
     let camera_node_handle = model.push_node(camera_node);
     model.push_to_scene(camera_node_handle);
 
-    let mut current_pipeline = 0;
+    let mut panel = ui::Panel::default();
 
     loop {
         win.input.update();
@@ -75,10 +77,11 @@ fn main_loop(mut win: Win) {
         // Update camera for window size
         {
             let camera = model.get_camera_mut(camera_handle).unwrap();
-            *camera = Camera::infinite_perspective(
+            *camera = Camera::finite_perspective(
                 win.size.width as f32 / win.size.height as f32,
                 3.14 / 4.0,
                 0.1,
+                100.0,
             );
         }
 
@@ -87,28 +90,24 @@ fn main_loop(mut win: Win) {
         // Move camera
         let camera_node = model.get_node_mut(camera_node_handle).unwrap();
 
-        let mut camera_movement = Vec3::ZERO;
-        if win.input.mouse.movement != Vec2::ZERO && win.input.mouse.left.is_down() {
-            // Mouse uses screen coordinates with inverted Y axis.
-            // On the other hand, camera movement should be the opposite of the natural movement of the mouse,
-            // hence only the X axis is inverted here.
-            camera_movement = win.input.mouse.movement.extend(0.0) * Vec3::new(-1.0, 1.0, 1.0);
+        let mut camera_x = win.input.left_axis.x;
+        if win.input.a.is_down() {
+            camera_x -= 1.0;
         }
-        let camera_z = if win.input.w.is_down() {
-            -1.0
-        } else if win.input.s.is_down() {
-            1.0
-        } else {
-            0.0
-        };
-        camera_movement.set_z(camera_z);
-        camera_node.trs.translate(camera_movement * delta);
+        if win.input.d.is_down() {
+            camera_x += 1.0;
+        }
+        // Use left axis for camera movement
 
-        {
-            // Update camera
-            let camera = model.get_camera_mut(camera).unwrap();
-            *camera = Camera::orthographic(4.0, 4.0, 0.1, 10.0);
+        let mut camera_z = -win.input.left_axis.y;
+        if win.input.w.is_down() {
+            camera_z += 1.0
         }
+        if win.input.s.is_down() {
+            camera_z -= 1.0;
+        }
+        let camera_movement = Vec3::new(camera_x, camera_z, 0.0);
+        camera_node.trs.translate(camera_movement * delta);
 
         let frame = vkr.next_frame(&win).unwrap();
         let Some(mut frame) = frame else {
@@ -117,24 +116,12 @@ fn main_loop(mut win: Win) {
 
         frame.begin(&model);
 
-        let gui_ctx = gui.begin(delta, &win.input, frame.get_size());
-
-        egui::Window::new("Switch")
-            .auto_sized()
-            .collapsible(false)
-            .fixed_pos(egui::pos2(32.0, 32.0))
-            .show(gui_ctx, |ui| {
-                ui.radio_value(&mut current_pipeline, 0, "present");
-                ui.radio_value(&mut current_pipeline, 1, "normal");
-                ui.radio_value(&mut current_pipeline, 2, "depth");
-            });
-
-        gui.end(&mut frame);
+        panel.show(delta, &win, model.get_gltf(), &mut frame, &mut gui);
 
         frame.begin_render(&vkr.pass);
         frame.draw(&model, &pipelines);
 
-        match current_pipeline {
+        match panel.current_pipeline {
             0 => frame.end_scene(&vkr.present_pipeline),
             1 => frame.end_scene(&vkr.normal_pipeline),
             2 => frame.end_scene(&vkr.depth_pipeline),
