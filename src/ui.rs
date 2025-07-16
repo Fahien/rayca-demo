@@ -20,7 +20,7 @@ impl Panel {
         }
     }
 
-    pub fn show(&mut self, delta: f32, win: &Win, model: &Model, frame: &mut Frame, gui: &mut Gui) {
+    pub fn show(&mut self, delta: f32, win: &Win, frame: &mut Frame, gui: &mut Gui) {
         let gui_ctx = gui.begin(delta, &win.input, win.size);
         let frame_size = frame.get_size();
 

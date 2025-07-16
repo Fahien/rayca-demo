@@ -48,22 +48,10 @@ fn main_loop(mut win: Win) {
         &vkr.pass,
     );
 
-    // Get model path from CLI
-    let model_path = std::env::args()
-        .nth(1)
-        .unwrap_or("models/box-textured/BoxTextured.gltf".to_string());
+    let mut scene = RenderScene::new(&vkr.dev);
 
-    let gltf_model =
-        Model::load_gltf_path(model_path, &vkr.assets).expect("Failed to open gltf model");
-    let mut model = RenderModel::new_with_gltf(&vkr.dev, &vkr.assets, gltf_model);
-
-    let camera_handle = model.push_camera(Camera::infinite_perspective(1.0, 3.14 / 4.0, 0.1));
-    let camera_node = Node::builder()
-        .camera(camera_handle)
-        .trs(Trs::builder().translation(Vec3::new(0.0, 0.0, 3.2)).build())
-        .build();
-    let camera_node_handle = model.push_node(camera_node);
-    model.push_to_scene(camera_node_handle);
+    push_model(&mut scene, 0, &vkr);
+    push_model(&mut scene, 1, &vkr);
 
     let mut panel = ui::Panel::default();
 
@@ -76,7 +64,7 @@ fn main_loop(mut win: Win) {
 
         // Update camera for window size
         {
-            let camera = model.get_camera_mut(camera_handle).unwrap();
+            let camera = scene.get_default_camera_mut();
             *camera = Camera::finite_perspective(
                 win.size.width as f32 / win.size.height as f32,
                 3.14 / 4.0,
@@ -88,43 +76,45 @@ fn main_loop(mut win: Win) {
         let delta = timer.get_delta().as_secs_f32();
 
         // Move camera
-        let camera_node = model.get_node_mut(camera_node_handle).unwrap();
+        {
+            let camera_node = scene.get_default_camera_node_mut();
 
-        let mut camera_x = win.input.left_axis.x;
-        if win.input.a.is_down() {
-            camera_x -= 1.0;
-        }
-        if win.input.d.is_down() {
-            camera_x += 1.0;
-        }
-        // Use left axis for camera movement
+            let mut camera_x = win.input.left_axis.x;
+            if win.input.a.is_down() {
+                camera_x -= 1.0;
+            }
+            if win.input.d.is_down() {
+                camera_x += 1.0;
+            }
+            // Use left axis for camera movement
 
-        let mut camera_z = -win.input.left_axis.y;
-        if win.input.w.is_down() {
-            camera_z += 1.0
+            let mut camera_z = win.input.left_axis.y;
+            if win.input.w.is_down() {
+                camera_z -= 1.0
+            }
+            if win.input.s.is_down() {
+                camera_z += 1.0;
+            }
+            let camera_movement = Vec3::new(camera_x, 0.0, camera_z);
+            camera_node.trs.translate(camera_movement * delta);
         }
-        if win.input.s.is_down() {
-            camera_z -= 1.0;
-        }
-        let camera_movement = Vec3::new(camera_x, camera_z, 0.0);
-        camera_node.trs.translate(camera_movement * delta);
 
         let frame = vkr.next_frame(&win).unwrap();
         let Some(mut frame) = frame else {
             continue;
         };
 
-        frame.begin(&model);
+        frame.begin(&scene);
 
-        panel.show(delta, &win, model.get_gltf(), &mut frame, &mut gui);
+        panel.show(delta, &win, &mut frame, &mut gui);
 
         frame.begin_render(&vkr.pass);
-        frame.draw(&model, &pipelines);
+        frame.draw(&scene, &pipelines);
 
         match panel.current_pipeline {
-            0 => frame.end_scene(&vkr.present_pipeline),
-            1 => frame.end_scene(&vkr.normal_pipeline),
-            2 => frame.end_scene(&vkr.depth_pipeline),
+            0 => frame.end(&scene, &vkr.present_pipeline),
+            1 => frame.end(&scene, &vkr.normal_pipeline),
+            2 => frame.end(&scene, &vkr.depth_pipeline),
             _ => unreachable!(),
         };
 
@@ -134,4 +124,25 @@ fn main_loop(mut win: Win) {
 
     // Make sure device is idle before releasing Vulkan resources
     vkr.dev.wait();
+}
+
+fn push_model(scene: &mut RenderScene, model_id: usize, vkr: &Vkr) {
+    static MODEL_PATHS: [&str; 2] = [
+        "models/box-textured/BoxTextured.gltf",
+        "models/cesium-milk-truck/CesiumMilkTruck.gltf",
+    ];
+    // Get model path from CLI
+    let model_path = std::env::args()
+        .nth(model_id + 1)
+        .unwrap_or(MODEL_PATHS[model_id].to_string());
+
+    let gltf_model =
+        Model::load_gltf_path(model_path, &vkr.assets).expect("Failed to open gltf model");
+    let mut model = RenderModel::new_with_gltf(&vkr.dev, &vkr.assets, gltf_model);
+    model
+        .get_root_mut()
+        .trs
+        .translate(Vec3::new(model_id as f32 * 2.0, 0.0, 0.0));
+
+    scene.push_model(model);
 }
