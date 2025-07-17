@@ -76,28 +76,7 @@ fn main_loop(mut win: Win) {
         let delta = timer.get_delta().as_secs_f32();
 
         // Move camera
-        {
-            let camera_node = scene.get_default_camera_node_mut();
-
-            let mut camera_x = win.input.left_axis.x;
-            if win.input.a.is_down() {
-                camera_x -= 1.0;
-            }
-            if win.input.d.is_down() {
-                camera_x += 1.0;
-            }
-            // Use left axis for camera movement
-
-            let mut camera_z = win.input.left_axis.y;
-            if win.input.w.is_down() {
-                camera_z -= 1.0
-            }
-            if win.input.s.is_down() {
-                camera_z += 1.0;
-            }
-            let camera_movement = Vec3::new(camera_x, 0.0, camera_z);
-            camera_node.trs.translate(camera_movement * delta);
-        }
+        move_camera(&mut win, &mut scene, delta);
 
         let frame = vkr.next_frame(&win).unwrap();
         let Some(mut frame) = frame else {
@@ -145,4 +124,48 @@ fn push_model(scene: &mut RenderScene, model_id: usize, vkr: &Vkr) {
         .translate(Vec3::new(model_id as f32 * 2.0, 0.0, 0.0));
 
     scene.push_model(model);
+}
+
+fn move_camera(win: &mut Win, scene: &mut RenderScene, delta: f32) {
+    let speed = 5.0 * delta;
+
+    let camera_node = scene.get_default_camera_node_mut();
+
+    // TODO use right axis for rotation
+    if win.input.a.is_down() || win.input.android.l1.is_down() {
+        camera_node
+            .trs
+            .rotate(Quat::axis_angle(Vec3::Y_AXIS, delta));
+    }
+    if win.input.d.is_down() || win.input.android.r1.is_down() {
+        camera_node
+            .trs
+            .rotate(Quat::axis_angle(Vec3::Y_AXIS, -delta));
+    }
+
+    let mut camera_x = win.input.android.left_axis.x;
+
+    if win.input.q.is_down() {
+        camera_x -= 1.0;
+    }
+    if win.input.e.is_down() {
+        camera_x += 1.0;
+    }
+
+    let mut camera_z = win.input.android.left_axis.y;
+
+    if win.input.w.is_down() {
+        camera_z -= 1.0
+    }
+    if win.input.s.is_down() {
+        camera_z += 1.0;
+    }
+
+    // When convertin to a matrix, the rotation is applied before the translation,
+    // se if we want to move the camera in the direction it is facing,
+    // we need to rotate the camera translation.
+    let camera_translation = Vec3::new(camera_x, 0.0, camera_z)
+        .get_normalized()
+        .get_rotated(camera_node.trs.rotation);
+    camera_node.trs.translate(camera_translation * speed);
 }

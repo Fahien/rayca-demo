@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "ab_glyph"
-version = "0.2.30"
+version = "0.2.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e0f4f6fbdc5ee39f2ede9f5f3ec79477271a6d6a2baff22310d51736bda6cea"
+checksum = "e074464580a518d16a7126262fffaaa47af89d4099d4cb403f8ed938ba12ee7d"
 dependencies = [
  "ab_glyph_rasterizer",
  "owned_ttf_parser",
@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "rayca-core"
 version = "0.1.0"
-source = "git+https://github.com/fahien/rayca-core.git#4880bfb419ca71ece082cdcc078914e5b9839c0f"
+source = "git+https://github.com/fahien/rayca-core.git#0ff5707694e15be01169d1cf12586558cf7e2802"
 dependencies = [
  "ash",
  "image",
@@ -1871,7 +1871,7 @@ dependencies = [
 [[package]]
 name = "rayca-math"
 version = "0.1.0"
-source = "git+https://github.com/fahien/rayca-math.git#440886b8789f8fa0a498622db0a91e59119e85b0"
+source = "git+https://github.com/fahien/rayca-math.git#c91547d732e0e2c8fd1f86d070c44adc700dbda9"
 dependencies = [
  "num-traits",
  "rand 0.9.1",
@@ -1881,7 +1881,7 @@ dependencies = [
 [[package]]
 name = "rayca-pipe"
 version = "0.0.1"
-source = "git+https://github.com/fahien/rayca-pipe.git#d8ded92332a879661bf6945c6d5b4924a855c329"
+source = "git+https://github.com/fahien/rayca-pipe.git#0bbef86410785853578426a1c22afb881105e2a0"
 dependencies = [
  "proc-macro2",
  "quote",

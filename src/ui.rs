@@ -40,31 +40,9 @@ impl Panel {
             .show(gui_ctx, |ui| {
                 ui.label(format!(
                     "Left Axis: {:.2}x{:.2}",
-                    win.input.left_axis.x, win.input.left_axis.y
+                    win.input.android.left_axis.x, win.input.android.left_axis.y
                 ));
             });
-
-        //egui::Window::new("Model")
-        //    .collapsible(false)
-        //    .fixed_size(egui::vec2(300.0, 600.0))
-        //    .show(gui_ctx, |ui| {
-        //        ui.label("Primitives");
-        //        for primitive in model.primitives.iter() {
-        //            ui.label(format!("Vertices: {}", primitive.vertices.len()));
-        //            for vertex in &primitive.vertices {
-        //                ui.label(format!("{:?}", vertex.pos));
-        //            }
-        //        }
-        //    });
-        //
-        //egui::Window::new("Pipeline")
-        //    .collapsible(false)
-        //    .fixed_size(egui::vec2(300.0, 200.0))
-        //    .show(gui_ctx, |ui| {
-        //        ui.radio_value(&mut self.current_pipeline, 0, "present");
-        //        ui.radio_value(&mut self.current_pipeline, 1, "normal");
-        //        ui.radio_value(&mut self.current_pipeline, 2, "depth");
-        //    });
 
         gui.end(frame);
     }
