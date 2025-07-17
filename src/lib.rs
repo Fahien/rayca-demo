@@ -65,11 +65,10 @@ fn main_loop(mut win: Win) {
         // Update camera for window size
         {
             let camera = scene.get_default_camera_mut();
-            *camera = Camera::finite_perspective(
+            *camera = Camera::infinite_perspective(
                 win.size.width as f32 / win.size.height as f32,
                 3.14 / 4.0,
                 0.1,
-                100.0,
             );
         }
 
@@ -108,7 +107,7 @@ fn main_loop(mut win: Win) {
 fn push_model(scene: &mut RenderScene, model_id: usize, vkr: &Vkr) {
     static MODEL_PATHS: [&str; 2] = [
         "models/box-textured/BoxTextured.gltf",
-        "models/cesium-milk-truck/CesiumMilkTruck.gltf",
+        "models/sponza/Sponza.gltf",
     ];
     // Get model path from CLI
     let model_path = std::env::args()
