@@ -13,7 +13,11 @@ impl Panel {
     fn show_node(ui: &mut egui::Ui, model: &Model, node: Handle<Node>, indent: usize) {
         let node = model.nodes.get(node).unwrap();
         let indent_str = " ".repeat(indent * 2);
-        ui.label(format!("{indent_str}Node: {}", node.name));
+        if let Some(name) = node.name.as_ref() {
+            ui.label(format!("{indent_str}Node: {}", name));
+        } else {
+            ui.label(format!("{indent_str}Node: Unknown"));
+        }
         ui.label(format!("{indent_str}Transform: {:?}", node.trs));
         for child in node.children.iter() {
             Self::show_node(ui, model, *child, indent + 1);

@@ -48,10 +48,7 @@ fn main_loop(mut win: Win) {
         &vkr.pass,
     );
 
-    let mut scene = RenderScene::new(&vkr.dev);
-
-    push_model(&mut scene, 0, &vkr);
-    push_model(&mut scene, 1, &vkr);
+    let mut scene = RenderScene::load_glx_path(&vkr.dev, "models/test.glx", &vkr.assets);
 
     let mut panel = ui::Panel::default();
 
@@ -102,27 +99,6 @@ fn main_loop(mut win: Win) {
 
     // Make sure device is idle before releasing Vulkan resources
     vkr.dev.wait();
-}
-
-fn push_model(scene: &mut RenderScene, model_id: usize, vkr: &Vkr) {
-    static MODEL_PATHS: [&str; 2] = [
-        "models/box-textured/BoxTextured.gltf",
-        "models/sponza/Sponza.gltf",
-    ];
-    // Get model path from CLI
-    let model_path = std::env::args()
-        .nth(model_id + 1)
-        .unwrap_or(MODEL_PATHS[model_id].to_string());
-
-    let gltf_model =
-        Model::load_gltf_path(model_path, &vkr.assets).expect("Failed to open gltf model");
-    let mut model = RenderModel::new_with_gltf(&vkr.dev, &vkr.assets, gltf_model);
-    model
-        .get_root_mut()
-        .trs
-        .translate(Vec3::new(model_id as f32 * 2.0, 0.0, 0.0));
-
-    scene.push_model(model);
 }
 
 fn move_camera(win: &mut Win, scene: &mut RenderScene, delta: f32) {
